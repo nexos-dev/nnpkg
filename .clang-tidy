@@ -1,0 +1,8 @@
+Checks: >
+    "bugprone-*",
+    "-cert-*",
+    "clang-analyzer-*",
+    "performance-*",
+    "-bugprone-easily-swappable-parameters",
+    "-bugprone-reserved-identifier",
+    "-performance-no-int-to-ptr"
