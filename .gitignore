@@ -1,3 +1,5 @@
 *.code-workspace
 prefix
 build
+*.po~
+.VSCodeCounter

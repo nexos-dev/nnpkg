@@ -17,5 +17,39 @@
 
 // clang-format off
 
-#define NNPKG_VERSION ${NNPKG_VERSION}
-#define NNPKG_ENABLE_NLS ${NNPKG_ENABLE_NLS}
+#ifndef _CONFIG_H
+#define _CONFIG_H
+
+#include <libintl.h>
+
+#define NNPKG_VERSION "@CMAKE_PROJECT_VERSION@"
+#define NNPKG_LOCALE_BASE "@NNPKG_LOCALE_BASE@"
+#cmakedefine NNPKG_ENABLE_NLS
+#cmakedefine HAVE_VISIBILITY
+#cmakedefine HAVE_DECLSPEC_EXPORT
+
+// Get visibility stuff right
+#ifdef HAVE_VISIBILITY
+#define NNPKG_PUBLIC __attribute__ ((visibility ("default")))
+#elif defined HAVE_DECLSPEC_EXPORT
+#ifdef IN_LIBNNPKG
+#define NNPKG_PUBLIC __declspec(dllexport)
+#else
+#define NNPKG_PUBLIC __declspec(dllimport)
+#endif
+#else
+#define NNPKG_PUBLIC
+#endif
+
+#define NNPKG_DATABASE "nnpkgdb"
+#define NNPKG_DATABASE_PATH "@NNPKG_DATABASE_PATH@"
+#define NNPKG_STRTAB "nnpkgstr"
+
+// i18n stuff
+#ifdef NNPKG_ENABLE_NLS
+#define _(s) (gettext (s))
+#else
+#define _(s) (s)
+#endif
+
+#endif

@@ -37,6 +37,8 @@ endif()
 
 include(GNUInstallDirs)
 include(GettextHelp)
+include(SdkCompilerTest)
+include(NexTest)
 
 # Find libintl
 find_package(Intl)
@@ -77,15 +79,32 @@ if(NNPKG_ENABLE_NLS)
     endforeach()
 endif()
 
+# Set up configuration options
+set(NNPKG_DATABASE_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LOCALSTATEDIR}/nnpkg" 
+    CACHE STRING "Path to database file")
+
 # See if tests should be enabled
 if(${NNPKG_ENABLE_TESTS})
     nextest_enable_tests()
 endif()
 
+# Set up debugging C flags if need be
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_options(-O0 -g)
+else()
+    add_compile_options(-O3 -DNDEBUG)
+endif()
+
 # Ensure headers output in binary directory are included
 include_directories(${CMAKE_BINARY_DIR})
+
+# Chek for library visibility declarations
+check_library_visibility(HAVE_DECLPSEC HAVE_VISIBILITY)
 
 add_subdirectory(libraries)
 add_subdirectory(frontend)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/config.in.h ${CMAKE_BINARY_DIR}/config.h)
+
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS 
+             ${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in)

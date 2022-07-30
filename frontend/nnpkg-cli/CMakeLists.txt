@@ -1,5 +1,5 @@
-/*
-    main.c - contains entry point to nnpkg
+#[[
+    CMakeLists.txt - contains build system for nnpkg frontend
     Copyright 2022 The NexNix Project
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,13 +13,20 @@
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-*/
+]]
 
-#include <libnex.h>
-#include <stdio.h>
+cmake_minimum_required(VERSION 3.00)
+project(nnpkg-cli LANGUAGES C)
 
-int main (int argc, char** argv)
-{
-    setprogname (argv[0]);
-    return 0;
-}
+list(APPEND NNPKG_CLI_SOURCES main.c initDb.c addPkg.c)
+
+# Set up PO files
+gettext_files(DOMAIN nnpkg
+              OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/po"
+              LANGS "${NNPKG_ENABLED_LOCALES}"
+              SOURCES "${NNPKG_CLI_SOURCES}")
+
+add_executable(nnpkg ${NNPKG_CLI_SOURCES})
+target_link_libraries(nnpkg PRIVATE nnpkgman)
+
+install(TARGETS nnpkg DESTINATION ${CMAKE_INSTALL_BINDIR})

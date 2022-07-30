@@ -1,5 +1,5 @@
 #[[
-    CMakeLists.txt - contains build system for nnpkg frontend
+    CMakeLists.txt - contains directory hooks for frontends
     Copyright 2022 The NexNix Project
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,11 +16,5 @@
 ]]
 
 cmake_minimum_required(VERSION 3.00)
-project(nnpkg-cli LANGUAGES C)
 
-list(APPEND NNPKG_CLI_SOURCES main.c)
-
-add_executable(nnpkg ${NNPKG_CLI_SOURCES})
-target_link_libraries(nnpkg PRIVATE nex)
-
-install(TARGETS nnpkg DESTINATION ${CMAKE_INSTALL_BINDIR})
+add_subdirectory(nnpkg-cli)

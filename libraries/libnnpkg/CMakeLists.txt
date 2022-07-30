@@ -17,4 +17,39 @@
 
 cmake_minimum_required(VERSION 3.00)
 
+list(APPEND LIBNNPKG_SOURCES 
+     propdb.c 
+     pkg.c 
+     pkgdb.c 
+     strtab.c 
+     pkgconf.c)
+
+# Set up PO files
+gettext_files(DOMAIN libnnpkg
+              OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/po"
+              LANGS "${NNPKG_ENABLED_LOCALES}"
+              SOURCES "${LIBNNPKG_SOURCES}")
+
+add_library(nnpkgman ${LIBNNPKG_SOURCES})
+
+# Ensure symbols are hidden by default
+if(BUILD_SHARED_LIBS)
+    set_target_properties(nnpkgman PROPERTIES C_VISIBILITY_PRESET hidden)
+endif()
+
+target_include_directories(nnpkgman PUBLIC include)
+target_compile_definitions(nnpkgman PRIVATE IN_LIBNNPKG)
+target_link_libraries(nnpkgman PUBLIC nex conf)
+
+install(TARGETS nnpkgman)
+
+# Create test suites
+list(APPEND LIBNNPKG_TESTS strtab propdb pkg pkgconf)
+foreach(test ${LIBNNPKG_TESTS})
+    nextest_add_library_test(NAME ${test}
+                             SOURCE tests/${test}.c
+                             LIBS nnpkgman
+                             DEFINES IN_LIBNNPKG
+                             WORKDIR ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+endforeach()
 
