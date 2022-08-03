@@ -27,6 +27,7 @@ gettext_files(DOMAIN nnpkg
               SOURCES "${NNPKG_CLI_SOURCES}")
 
 add_executable(nnpkg ${NNPKG_CLI_SOURCES})
+set_target_properties(nnpkg PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(nnpkg PRIVATE nnpkgman)
 
 install(TARGETS nnpkg DESTINATION ${CMAKE_INSTALL_BINDIR})
