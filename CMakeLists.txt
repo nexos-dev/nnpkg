@@ -16,7 +16,7 @@
 ]]
 
 cmake_minimum_required(VERSION 3.00)
-project(nnpkg VERSION 0.1.0 LANGUAGES C)
+project(nnpkg VERSION 0.1.0 LANGUAGES C CXX)
 
 option(NNPKG_ENABLE_TESTS "Enable unit tests for nnpkg" OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
