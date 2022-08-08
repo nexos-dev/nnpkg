@@ -95,6 +95,7 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgFindPackage (const char32_t* name)
 
 NNPKG_PUBLIC void PkgCloseDbs()
 {
-    destDb = NULL;
     ListDestroy (pkgDbs);
+    destDb = NULL;
+    pkgDbs = NULL;
 }

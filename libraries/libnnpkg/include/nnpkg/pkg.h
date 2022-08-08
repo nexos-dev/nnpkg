@@ -27,6 +27,12 @@
 #include <nnpkg/propdb.h>
 #include <stdbool.h>
 
+// nnpkg configuration structure
+typedef struct _nnpkgConf
+{
+    NnpkgDbLocation_t dbLoc;    ///< Location of package database
+} NnpkgMainConf_t;
+
 // Package type
 typedef struct _nnpkg
 {
@@ -64,17 +70,11 @@ typedef struct _nnpkgdb
 
 // Function to manipulate a package database
 
-/// Creates the package database
-NNPKG_PUBLIC bool PkgDbCreate();
-
 /// Opens up the package database
 NNPKG_PUBLIC NnpkgPropDb_t* PkgDbOpen (NnpkgDbLocation_t* dbLoc);
 
 /// Close the package database
 NNPKG_PUBLIC void PkgDbClose (NnpkgPropDb_t* db);
-
-/// Gets package database location
-NNPKG_PUBLIC bool PkgDbGetPath (NnpkgDbLocation_t* out);
 
 /// Adds package to database
 NNPKG_PUBLIC bool PkgDbAddPackage (NnpkgPropDb_t* db, NnpkgPackage_t* pkg);
@@ -109,5 +109,14 @@ NNPKG_PUBLIC bool PkgRemovePackage (NnpkgPackage_t* pkg);
 
 /// Finds a package in the first available database
 NNPKG_PUBLIC NnpkgPackage_t* PkgFindPackage (const char32_t* name);
+
+/// Parse configuration file for nnpkg
+NNPKG_PUBLIC bool PkgParseMainConf (const char* file);
+
+/// Gets program configuration
+NNPKG_PUBLIC NnpkgMainConf_t* PkgGetMainConf();
+
+/// Destroys main configuration
+NNPKG_PUBLIC void PkgDestroyMainConf();
 
 #endif

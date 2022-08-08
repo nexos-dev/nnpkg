@@ -24,6 +24,7 @@
 
 // Arguments
 static const char* pkgPath = NULL;
+static const char* confFile = NNPKG_CONFFILE_PATH;
 
 static bool addSetPkg (actionOption_t* opt, char* arg)
 {
@@ -33,10 +34,19 @@ static bool addSetPkg (actionOption_t* opt, char* arg)
     return true;
 }
 
+static bool addSetConf (actionOption_t* opt, char* arg)
+{
+    UNUSED (opt);
+    assert (arg);
+    confFile = arg;
+    return true;
+}
+
 // Option table
 static actionOption_t addOptions[] = {
-    {0, "",   addSetPkg, true},
-    {0, NULL, NULL,      0   }
+    {'c', "conf", addSetConf, true},
+    {0,   "",     addSetPkg,  true},
+    {0,   NULL,   NULL,       0   }
 };
 
 actionOption_t* addGetOptions()
@@ -52,12 +62,11 @@ bool addRunAction()
         error ("Package configuration file not specified");
         return false;
     }
-    // NOTE: database handling is very bad right now. We need a better system.
-    // For now, just grab the default database and call PropOpenDb()
-    NnpkgDbLocation_t dbLoc;
-    if (!PkgDbGetPath (&dbLoc))
+    // Get database path from configuration
+    if (!PkgParseMainConf (confFile))
         return false;
-    if (!PkgOpenDb (&dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL))
+    NnpkgDbLocation_t* dbLoc = &PkgGetMainConf()->dbLoc;
+    if (!PkgOpenDb (dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL))
         return false;
     // Parse configuration of package
     NnpkgPackage_t* newPkg = PkgReadConf (pkgPath);
@@ -69,6 +78,7 @@ bool addRunAction()
     if (!PkgAddPackage (newPkg))
         return false;
     printf ("done\n");
+    PkgDestroyMainConf();
     PkgCloseDbs();
     return true;
 }

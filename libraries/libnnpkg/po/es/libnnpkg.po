@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-07-30 08:13-0400\n"
+"POT-Creation-Date: 2022-08-08 11:07-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: nexos <wej22007@outlook.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,11 +21,10 @@ msgstr ""
 msgid "package database already exists"
 msgstr "la base de datos del paquete ya existe"
 
-#: pkgdb.c:82 pkgdb.c:91
-msgid "path truncation detected"
-msgstr "truncamiento de ruta de archivo detectado"
-
 #: strtab.c:71
 #, fuzzy
 msgid "string table already exists"
 msgstr "la base de datos del paquete ya existe"
+
+#~ msgid "path truncation detected"
+#~ msgstr "truncamiento de ruta de archivo detectado"

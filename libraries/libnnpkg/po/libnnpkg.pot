@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-08-04 17:14-0400\n"
+"POT-Creation-Date: 2022-08-08 13:37-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,10 +19,6 @@ msgstr ""
 
 #: propdb.c:79
 msgid "package database already exists"
-msgstr ""
-
-#: pkgdb.c:82 pkgdb.c:91
-msgid "path truncation detected"
 msgstr ""
 
 #: strtab.c:71

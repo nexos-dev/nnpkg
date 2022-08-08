@@ -22,21 +22,18 @@
 #include <nnpkg/propdb.h>
 #include <stdio.h>
 
-// Path to put everything
-static const char* dbPath = NNPKG_DATABASE_PATH;
+// Path to configuration file
+static const char* confFile = NNPKG_CONFFILE_PATH;
 
-// Argument functions
-bool initSetPath (actionOption_t* opt, char* arg)
+bool setConfPath (actionOption_t* opt, char* arg)
 {
-    UNUSED (opt);
-    assert (arg);
-    dbPath = arg;
+    confFile = arg;
     return true;
 }
 
 // Option table
 static actionOption_t initOptions[] = {
-    {'p', "path", initSetPath, true},
+    {'c', "conf", setConfPath, true},
     {0,   NULL,   NULL,        0   }
 };
 
@@ -49,16 +46,14 @@ actionOption_t* initGetOptions()
 // Run init action
 bool initRunAction()
 {
-    // Create database
-    NnpkgDbLocation_t dbLoc;
-    PkgDbGetPath (&dbLoc);
-    if (!PropDbCreate (&dbLoc))
+    PkgParseMainConf (confFile);
+    NnpkgDbLocation_t* dbLoc = &PkgGetMainConf()->dbLoc;
+    if (!PropDbCreate (dbLoc))
     {
         error ("Unable to create package database");
         return false;
     }
-    printf ("Initialized empty package database in %s\n", dbPath);
-    StrRefDestroy (dbLoc.dbPath);
-    StrRefDestroy (dbLoc.strtabPath);
+    printf ("Initialized empty package database in %s\n", StrRefGet (dbLoc->dbPath));
+    PkgDestroyMainConf();
     return true;
 }

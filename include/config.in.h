@@ -41,9 +41,7 @@
 #define NNPKG_PUBLIC
 #endif
 
-#define NNPKG_DATABASE "nnpkgdb"
-#define NNPKG_DATABASE_PATH "@NNPKG_DATABASE_PATH@"
-#define NNPKG_STRTAB "nnpkgstr"
+#define NNPKG_CONFFILE_PATH "@NNPKG_CONFFILE_PATH@"
 
 // i18n stuff
 #ifdef NNPKG_ENABLE_NLS

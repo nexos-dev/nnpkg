@@ -1,0 +1,7 @@
+# nnpkg.conf - contains nnpkg configuration data
+
+settings
+{
+    packageDb: "@NNPKG_DATABASE_PATH@";
+    strtab: "@NNPKG_STRTAB_PATH@";
+}

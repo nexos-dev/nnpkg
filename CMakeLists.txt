@@ -80,8 +80,12 @@ if(NNPKG_ENABLE_NLS)
 endif()
 
 # Set up configuration options
-set(NNPKG_DATABASE_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LOCALSTATEDIR}/nnpkg" 
-    CACHE STRING "Path to database file")
+set(NNPKG_CONFFILE_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_SYSCONFDIR}/nnpkg.conf"
+    CACHE STRING "Path to nnpkg configuration file")
+set(NNPKG_DATABASE_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LOCALSTATEDIR}/nnpkgdb"
+    CACHE STRING "Path to nnpkg main database")
+set(NNPKG_STRTAB_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LOCALSTATEDIR}/nnpkgstrtab"
+    CACHE STRING "Path to nnpkg main string table")
 
 # See if tests should be enabled
 if(${NNPKG_ENABLE_TESTS})
@@ -105,6 +109,13 @@ add_subdirectory(libraries)
 add_subdirectory(frontend)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/config.in.h ${CMAKE_BINARY_DIR}/config.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/nnpkg.conf.in ${CMAKE_BINARY_DIR}/nnpkg.conf)
 
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS 
-             ${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in)
+             ${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in
+             ${CMAKE_CURRENT_SOURCE_DIR}/data/nnpkg.conf.in)
+
+# Get directory name of nnpkg configuration file
+get_filename_component(NNPKG_CONF_DIR ${NNPKG_CONFFILE_PATH} DIRECTORY)
+
+install(FILES ${CMAKE_BINARY_DIR}/nnpkg.conf DESTINATION ${NNPKG_CONF_DIR})

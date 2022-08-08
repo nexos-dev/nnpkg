@@ -38,10 +38,10 @@ int main (int argc, char** argv)
     setlocale (LC_ALL, "");
     bindtextdomain ("libnnpkg", NNPKG_LOCALE_BASE);
     // Remove old database
-    NnpkgDbLocation_t dbLoc;
-    PkgDbGetPath (&dbLoc);
-    StringRef_t* pkgDb = dbLoc.dbPath;
-    StringRef_t* strtab = dbLoc.strtabPath;
+    TEST_BOOL (PkgParseMainConf (NNPKG_CONFFILE_PATH), "PkgParseMainConf success");
+    NnpkgDbLocation_t* dbLoc = &PkgGetMainConf()->dbLoc;
+    StringRef_t* pkgDb = dbLoc->dbPath;
+    StringRef_t* strtab = dbLoc->strtabPath;
     if (unlink (StrRefGet (pkgDb)) == -1 && errno != ENOENT)
     {
         error ("%s: %s", pkgDb, strerror (errno));
@@ -53,22 +53,22 @@ int main (int argc, char** argv)
         return 1;
     }
     // Initialize database
-    PropDbCreate (&dbLoc);
+    PropDbCreate (dbLoc);
     // Try opening the database
-    NnpkgPropDb_t* db = PropDbOpen (&dbLoc);
+    NnpkgPropDb_t* db = PropDbOpen (dbLoc);
     TEST_BOOL (db, "PropDbOpen() success status");
     // Test that database header is intact
     TEST ((*((uint64_t*) db->memBase)),
           0x7878807571686600,
           "PropDbOpen() database integrity");
     // Test that database is locked
-    TEST (PropDbOpen (&dbLoc), NULL, "property database is locked");
+    TEST (PropDbOpen (dbLoc), NULL, "property database is locked");
     PropDbClose (db);
     // Test that database is actually unlocked
-    db = PropDbOpen (&dbLoc);
+    db = PropDbOpen (dbLoc);
     TEST_BOOL (db, "PropDbClose() unlocking");
     PropDbClose (db);
-    db = PropDbOpen (&dbLoc);
+    db = PropDbOpen (dbLoc);
     TEST_BOOL (db, "PropDbOpen() success");
     // Add a package to it
     // NOTE: There are no leaks here, even though we re-malloc prop a lot
@@ -82,7 +82,7 @@ int main (int argc, char** argv)
     PropDbAddProp (db, prop);
     // Commit to database
     PropDbClose (db);
-    db = PropDbOpen (&dbLoc);
+    db = PropDbOpen (dbLoc);
     TEST_BOOL (db, "PropDbOpen() success");
     // Test finding it
     prop = calloc (sizeof (NnpkgProp_t), 1);
@@ -97,7 +97,7 @@ int main (int argc, char** argv)
     TEST_BOOL (PropDbRemoveProp (db, prop), "PropDbRemoveProp() success");
     // Commit to database
     PropDbClose (db);
-    db = PropDbOpen (&dbLoc);
+    db = PropDbOpen (dbLoc);
     TEST_BOOL (db, "PropDbOpen() success");
     // Ensure we can't find property anymore
     TEST_BOOL (!PropDbFindProp (db, U"testPkg", prop), "PropDbRemoveProp()");
@@ -117,7 +117,7 @@ int main (int argc, char** argv)
     PropDbAddProp (db, prop);
     PropDbAddProp (db, prop2);
     PropDbClose (db);
-    db = PropDbOpen (&dbLoc);
+    db = PropDbOpen (dbLoc);
     // Ensure property is at correct location
     prop = malloc (sizeof (NnpkgProp_t));
     TEST_BOOL (PropDbFindProp (db, U"testPkg", prop), "PropDbFindProp() success");

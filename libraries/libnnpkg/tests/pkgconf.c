@@ -31,9 +31,9 @@ int main (int argc, char** argv)
     setprogname (argv[0]);
     setlocale (LC_ALL, "");
     bindtextdomain ("libnnpkg", NNPKG_LOCALE_BASE);
-    NnpkgDbLocation_t dbLoc;
-    PkgDbGetPath (&dbLoc);
-    TEST_BOOL (PkgOpenDb (&dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL),
+    TEST_BOOL (PkgParseMainConf (NNPKG_CONFFILE_PATH), "PkgParseMainConf success");
+    NnpkgDbLocation_t* dbLoc = &PkgGetMainConf()->dbLoc;
+    TEST_BOOL (PkgOpenDb (dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL),
                "PkgOpenDb() success");
     NnpkgPackage_t* pkg = PkgReadConf ("pkgconf.conf");
     TEST_BOOL (pkg, "PkgReadConf() success");
@@ -47,7 +47,7 @@ int main (int argc, char** argv)
     TEST_BOOL (!c32cmp (StrRefGet (dep->id), U"pkgtest2"), "Package validity 6");
     ObjDestroy (&pkg->obj);
     PkgCloseDbs();
-    StrRefDestroy (dbLoc.dbPath);
-    StrRefDestroy (dbLoc.strtabPath);
+    StrRefDestroy (dbLoc->dbPath);
+    StrRefDestroy (dbLoc->strtabPath);
     return 0;
 }

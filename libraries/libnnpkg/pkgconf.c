@@ -27,6 +27,184 @@
 #include <stdio.h>
 #include <string.h>
 
+// Configuration line number
+static int lineNo = 0;
+
+#define EXPECTING_SETTINGS 1
+
+// What we are expecting
+static int expecting = 0;
+
+// Current property being operated on
+static StringRef32_t* curProp = NULL;
+
+union val
+{
+    int64_t numVal;
+    StringRef32_t* strVal;
+};
+
+// Configuration structure
+static NnpkgMainConf_t conf = {0};
+
+NNPKG_PUBLIC NnpkgMainConf_t* PkgGetMainConf()
+{
+    return &conf;
+}
+
+bool pkgConfAddProperty (StringRef32_t* newProp,
+                         union val* val,
+                         bool isStart,
+                         int dataType)
+{
+    if (isStart)
+    {
+        curProp = newProp;
+        return true;
+    }
+    if (expecting == EXPECTING_SETTINGS)
+    {
+        // Check if this is the database path
+        if (!c32cmp (StrRefGet (curProp), U"packageDb"))
+        {
+            if (dataType != DATATYPE_STRING)
+            {
+                error ("%s:%d: property \"packageDb\" requires a string value",
+                       ConfGetFileName(),
+                       lineNo);
+                return false;
+            }
+            // Convert to host encoding
+            size_t hostLen = (c32len (StrRefGet (val->strVal)) * MB_CUR_MAX) + 1;
+            char* hostStrtab = malloc_s (hostLen);
+            if (!hostStrtab)
+                return false;
+            mbstate_t mbstate;
+            c32stombs (hostStrtab, StrRefGet (val->strVal), hostLen, &mbstate);
+            conf.dbLoc.dbPath = StrRefCreate (hostStrtab);
+        }
+        // Check if this is the string table path
+        else if (!c32cmp (StrRefGet (curProp), U"strtab"))
+        {
+            if (dataType != DATATYPE_STRING)
+            {
+                error ("%s:%d: property \"strtab\" requires a string value",
+                       ConfGetFileName(),
+                       lineNo);
+                return false;
+            }
+            // Convert to host encoding
+            size_t hostLen = (c32len (StrRefGet (val->strVal)) * MB_CUR_MAX) + 1;
+            char* hostStrtab = malloc_s (hostLen);
+            if (!hostStrtab)
+                return false;
+            mbstate_t mbstate;
+            c32stombs (hostStrtab, StrRefGet (val->strVal), hostLen, &mbstate);
+            conf.dbLoc.strtabPath = StrRefCreate (hostStrtab);
+        }
+        else
+        {
+            error ("%s:%d property \"%s\" unrecognized",
+                   ConfGetFileName(),
+                   lineNo,
+                   UnicodeToHost (StrRefGet (curProp)));
+            return false;
+        }
+    }
+    else
+        assert (!"Invalid expected block");
+    return true;
+}
+
+// Parse configuration file for nnpkg
+NNPKG_PUBLIC bool PkgParseMainConf (const char* file)
+{
+    ListHead_t* blocks = ConfInit (file);
+    if (!blocks)
+        return false;
+    // Parse blocks
+    ListEntry_t* curEntry = ListFront (blocks);
+    while (curEntry)
+    {
+        ConfBlock_t* block = ListEntryData (curEntry);
+        lineNo = block->lineNo;
+        // Figure out block type
+        if (!c32cmp (StrRefGet (block->blockType), U"settings"))
+        {
+            // Ensure there is no block name
+            if (block->blockName)
+            {
+                error ("%s:%d: block type \"settings\" does not accept a name",
+                       ConfGetFileName(),
+                       lineNo);
+                ConfFreeParseTree (blocks);
+                return false;
+            }
+            expecting = EXPECTING_SETTINGS;
+        }
+        else
+        {
+            error ("%s:%d: invalid block type %s specified",
+                   ConfGetFileName(),
+                   lineNo,
+                   UnicodeToHost (StrRefGet (block->blockType)));
+            ConfFreeParseTree (blocks);
+            return false;
+        }
+        // Apply the properties
+        ListHead_t* propsList = block->props;
+        ListEntry_t* propEntry = ListFront (propsList);
+        while (propEntry)
+        {
+            ConfProperty_t* curProp = ListEntryData (propEntry);
+            lineNo = curProp->lineNo;
+            // Start a new property
+            if (!pkgConfAddProperty (curProp->name, NULL, true, 0))
+            {
+                ConfFreeParseTree (blocks);
+                return false;
+            }
+            // Add all the actual values
+            for (int i = 0; i < curProp->nextVal; ++i)
+            {
+                lineNo = curProp->lineNo;
+                // Obtain value
+                union val val;
+                if (curProp->vals[i].type == DATATYPE_IDENTIFIER ||
+                    curProp->vals[i].type == DATATYPE_STRING)
+                {
+                    val.strVal = curProp->vals[i].str;
+                }
+                else
+                    val.numVal = curProp->vals[i].numVal;
+                if (!pkgConfAddProperty (NULL, &val, false, curProp->vals[i].type))
+                {
+                    ConfFreeParseTree (blocks);
+                    return false;
+                }
+            }
+            propEntry = ListIterate (propEntry);
+        }
+        curEntry = ListIterate (curEntry);
+    }
+    // Ensure database and string table path are valid
+    if (!conf.dbLoc.dbPath)
+    {
+        error ("%s: package database path not specified", ConfGetFileName());
+        ConfFreeParseTree (blocks);
+        return false;
+    }
+    ConfFreeParseTree (blocks);
+    return true;
+}
+
+// Destroys main configuration
+NNPKG_PUBLIC void PkgDestroyMainConf()
+{
+    StrRefDestroy (conf.dbLoc.dbPath);
+    StrRefDestroy (conf.dbLoc.strtabPath);
+}
+
 // Contained in pkgdb.c
 void pkgDestroy (const Object_t* obj);
 

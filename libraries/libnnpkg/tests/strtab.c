@@ -36,11 +36,10 @@ int main (int argc, char** argv)
     setprogname (argv[0]);
     setlocale (LC_ALL, "");
     bindtextdomain ("libnnpkg", NNPKG_LOCALE_BASE);
-
-    NnpkgDbLocation_t dbLoc;
-    PkgDbGetPath (&dbLoc);
+    TEST_BOOL (PkgParseMainConf (NNPKG_CONFFILE_PATH), "PkgParseMainConf success");
+    NnpkgDbLocation_t* dbLoc = &PkgGetMainConf()->dbLoc;
     // Remove old table
-    StringRef_t* strtab = dbLoc.strtabPath;
+    StringRef_t* strtab = dbLoc->strtabPath;
     if (unlink (StrRefGet (strtab)) == -1 && errno != ENOENT)
     {
         error ("%s: %s", StrRefGet (strtab), strerror (errno));
