@@ -72,7 +72,7 @@ bool parseAction (int argc, char** argv)
         if (!argv[i])
             break;
         bool optParsed = false;
-        while (opts->parse)
+        while (opts->parse && !optParsed)
         {
             // Check if this needs to be an argument, not an option
             if (!opts->shortOpt && argv[i][0] != '-')
