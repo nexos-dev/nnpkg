@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-07-30 09:28-0400\n"
+"POT-Creation-Date: 2022-08-08 14:11-0400\n"
 "PO-Revision-Date: 2022-07-16 19:26-0400\n"
 "Last-Translator: nexos <wej22007@outlook.com>\n"
 "Language-Team: Language  es\n"
@@ -16,15 +16,15 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: main.c:117
+#: main.c:121
 msgid "action not specified"
 msgstr ""
 
-#: main.c:122
+#: main.c:126
 msgid "first argument must be action"
 msgstr ""
 
-#: main.c:131
+#: main.c:135
 #, c-format
 msgid ""
 "%s - an efficient, user-friendly package manager\n"
@@ -47,7 +47,7 @@ msgid ""
 "For info on configuring nnpkg, see nnpkg.conf(5)\n"
 msgstr ""
 
-#: main.c:172
+#: main.c:176
 #, c-format
 msgid "\"%s\" is not a valid action"
 msgstr ""

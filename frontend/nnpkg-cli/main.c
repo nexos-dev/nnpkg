@@ -71,11 +71,13 @@ bool parseAction (int argc, char** argv)
         opts = optsBase;
         if (!argv[i])
             break;
+        bool optParsed = false;
         while (opts->parse)
         {
             // Check if this needs to be an argument, not an option
             if (!opts->shortOpt && argv[i][0] != '-')
             {
+                optParsed = true;
                 // This matches. Parse it
                 if (!opts->parse (opts, argv[i]))
                     return false;
@@ -84,6 +86,7 @@ bool parseAction (int argc, char** argv)
             else if (argv[i][0] == '-' && argv[i][1] != '-' &&
                      argv[i][1] == opts->shortOpt)
             {
+                optParsed = true;
                 if (!parseArg (argv, &i, opts))
                     return false;
             }
@@ -91,15 +94,16 @@ bool parseAction (int argc, char** argv)
             else if (argv[i][0] == '-' && argv[i][1] == '-' &&
                      !strcmp (argv[i] + 2, opts->longOpt))
             {
+                optParsed = true;
                 if (!parseArg (argv, &i, opts))
                     return false;
             }
-            else
-            {
-                error ("unrecognized option \"%s\"", argv[i]);
-                return false;
-            }
             ++opts;
+        }
+        if (!optParsed)
+        {
+            error ("unrecognized option \"%s\"", argv[i]);
+            return false;
         }
     }
     return true;
