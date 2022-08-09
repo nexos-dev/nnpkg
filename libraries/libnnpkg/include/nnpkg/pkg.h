@@ -65,6 +65,13 @@ typedef struct _nnpkgdb
     unsigned short location;    ///< Location of database. Either local or remote
 } NnpkgPackageDb_t;
 
+// Add package transaction
+typedef struct _nnpkgtransadd
+{
+    NnpkgPackage_t* pkg;    ///< Package being added
+    const char* pkgConf;    ///< Path of package cofiguration file
+} NnpkgTransAdd_t;
+
 // Database types and locations
 #define NNPKGDB_TYPE_SOURCE 1
 #define NNPKGDB_TYPE_DEST   2

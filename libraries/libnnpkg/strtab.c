@@ -99,8 +99,9 @@ NNPKG_PUBLIC bool PropDbOpenStrtab (NnpkgTransCb_t* cb,
     struct stat st;
     if (stat (fileName, &st) == -1)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_SYS;
+        cb->sysErrno = errno;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         free (db);
         return NULL;
     }
@@ -110,9 +111,9 @@ NNPKG_PUBLIC bool PropDbOpenStrtab (NnpkgTransCb_t* cb,
     db->strtabFd = open (fileName, O_RDWR);
     if (db->strtabFd == -1)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_SYS;
         cb->sysErrno = errno;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return false;
     }
     // Map database
@@ -120,9 +121,9 @@ NNPKG_PUBLIC bool PropDbOpenStrtab (NnpkgTransCb_t* cb,
         mmap (NULL, db->strtabSz, PROT_READ, MAP_PRIVATE, db->strtabFd, 0);
     if (!db->strtabBase)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_SYS;
         cb->sysErrno = errno;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         close (db->strtabFd);
         return false;
     }

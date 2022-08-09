@@ -18,11 +18,12 @@
 cmake_minimum_required(VERSION 3.00)
 
 list(APPEND LIBNNPKG_SOURCES 
-     propdb.c 
-     pkg.c 
-     pkgdb.c 
-     strtab.c 
-     pkgconf.c)
+            propdb.c 
+            pkg.c 
+            pkgdb.c 
+            strtab.c 
+            pkgconf.c
+            transaction.c)
 
 # Set up PO files
 gettext_files(DOMAIN libnnpkg

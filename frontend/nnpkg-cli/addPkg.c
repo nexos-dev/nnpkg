@@ -17,10 +17,12 @@
 
 #include "include/nnpkg.h"
 #include <assert.h>
+#include <errno.h>
 #include <libnex.h>
 #include <nnpkg/pkg.h>
 #include <nnpkg/propdb.h>
 #include <stdio.h>
+#include <string.h>
 
 // Arguments
 static const char* pkgPath = NULL;
@@ -54,6 +56,67 @@ actionOption_t* addGetOptions()
     return addOptions;
 }
 
+// Progressing hook
+void addProgress (NnpkgTransCb_t* cb, int newState)
+{
+    switch (newState)
+    {
+        case NNPKG_STATE_INIT_PKGSYS:
+            printf ("\n* Initializing database...");
+            break;
+        case NNPKG_STATE_READ_PKGCONF:
+            printf ("\n* Reading package configuration...");
+            break;
+        case NNPKG_STATE_ADDPKG:
+            printf ("\n* Adding package %s to database...",
+                    UnicodeToHost (StrRefGet (cb->progressHint[0])));
+            StrRefDestroy (cb->progressHint[0]);
+            break;
+        case NNPKG_STATE_CLEANUP_PKGSYS:
+            printf ("\n* Cleaning up...");
+            break;
+        case NNPKG_STATE_ACCEPT:
+            printf ("\nDone!\n");
+            break;
+        case NNPKG_TRANS_STATE_ERR: {
+            printf ("\n");
+            switch (cb->error)
+            {
+                case NNPKG_ERR_OOM:
+                    error ("out of memory");
+                    break;
+                case NNPKG_ERR_BROKEN_DEP:
+                    // NOTE: we split these fprint's to account for the limitations
+                    // of UnicodeToHost
+                    fprintf (stderr,
+                             "%s: error: package \"%s\" ",
+                             getprogname(),
+                             UnicodeToHost (StrRefGet (cb->errHint[0])));
+                    fprintf (stderr,
+                             "dependent on non-existant package \"%s\"\n",
+                             UnicodeToHost (StrRefGet (cb->errHint[1])));
+                    StrRefDestroy (cb->errHint[0]);
+                    StrRefDestroy (cb->errHint[1]);
+                    break;
+                case NNPKG_ERR_DB_LOCKED:
+                    error ("unable to acquire lock on package database");
+                    break;
+                case NNPKG_ERR_PKG_EXIST:
+                    error ("package %s already exists",
+                           UnicodeToHost (StrRefGet (cb->errHint[0])));
+                    StrRefDestroy (cb->errHint[0]);
+                    break;
+                case NNPKG_ERR_SYNTAX_ERR:
+                    error ("syntax error in configuration file");
+                    break;
+                case NNPKG_ERR_SYS:
+                    error ("system error: %s", strerror (errno));
+                    break;
+            }
+        }
+    }
+}
+
 bool addRunAction()
 {
     // Ensure pkgPath was set
@@ -62,24 +125,25 @@ bool addRunAction()
         error ("Package configuration file not specified");
         return false;
     }
+    printf ("* Starting transaction...");
     NnpkgTransCb_t cb;
-    // Get database path from configuration
-    if (!PkgParseMainConf (&cb, confFile))
+    // Prepare control block
+    cb.type = NNPKG_TRANS_ADD;
+    cb.confFile = confFile;
+    cb.progress = addProgress;
+    NnpkgTransAdd_t* transData = calloc_s (sizeof (NnpkgTransAdd_t));
+    if (!transData)
+    {
+        cb.error = NNPKG_ERR_OOM;
+        TransactSetState (&cb, NNPKG_TRANS_STATE_ERR);
         return false;
-    NnpkgDbLocation_t* dbLoc = &cb.conf->dbLoc;
-    if (!PkgOpenDb (&cb, dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL))
-        return false;
-    // Parse configuration of package
-    NnpkgPackage_t* newPkg = PkgReadConf (&cb, pkgPath);
-    if (!newPkg)
-        return false;
-    // Finally, add it
-    printf ("Adding package %s to database...\n",
-            UnicodeToHost (StrRefGet (newPkg->id)));
-    if (!PkgAddPackage (&cb, newPkg))
-        return false;
-    printf ("done\n");
-    PkgDestroyMainConf();
-    PkgCloseDbs();
-    return true;
+    }
+    transData->pkgConf = pkgPath;
+    cb.transactData = transData;
+    // Run transaction
+    bool res = TransactExecute (&cb);
+    free (transData);
+    if (!res)
+        printf ("\n* An error occurred while executing transaction. Aborting.\n");
+    return res;
 }

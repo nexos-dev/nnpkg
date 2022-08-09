@@ -47,6 +47,13 @@ union val
 // Configuration structure
 static NnpkgMainConf_t conf = {0};
 
+NnpkgPackage_t* pkgDbFindPackage (NnpkgTransCb_t* cb,
+                                  NnpkgPropDb_t* db,
+                                  const char32_t* name,
+                                  bool findingDep);
+
+void pkgDestroy (const Object_t* obj);
+
 NNPKG_PUBLIC NnpkgMainConf_t* PkgGetMainConf()
 {
     return &conf;
@@ -122,8 +129,8 @@ NNPKG_PUBLIC bool PkgParseMainConf (NnpkgTransCb_t* cb, const char* file)
     ListHead_t* blocks = ConfInit (file);
     if (!blocks)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_SYNTAX_ERR;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return false;
     }
     // Parse blocks
@@ -142,8 +149,8 @@ NNPKG_PUBLIC bool PkgParseMainConf (NnpkgTransCb_t* cb, const char* file)
                        ConfGetFileName(),
                        lineNo);
                 ConfFreeParseTree (blocks);
-                cb->state = NNPKG_TRANS_STATE_ERR;
                 cb->error = NNPKG_ERR_SYNTAX_ERR;
+                TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
                 return false;
             }
             expecting = EXPECTING_SETTINGS;
@@ -155,8 +162,8 @@ NNPKG_PUBLIC bool PkgParseMainConf (NnpkgTransCb_t* cb, const char* file)
                    lineNo,
                    UnicodeToHost (StrRefGet (block->blockType)));
             ConfFreeParseTree (blocks);
-            cb->state = NNPKG_TRANS_STATE_ERR;
             cb->error = NNPKG_ERR_SYNTAX_ERR;
+            TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
             return false;
         }
         // Apply the properties
@@ -170,8 +177,8 @@ NNPKG_PUBLIC bool PkgParseMainConf (NnpkgTransCb_t* cb, const char* file)
             if (!pkgConfAddProperty (curProp->name, NULL, true, 0))
             {
                 ConfFreeParseTree (blocks);
-                cb->state = NNPKG_TRANS_STATE_ERR;
                 cb->error = NNPKG_ERR_SYNTAX_ERR;
+                TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
                 return false;
             }
             // Add all the actual values
@@ -190,8 +197,8 @@ NNPKG_PUBLIC bool PkgParseMainConf (NnpkgTransCb_t* cb, const char* file)
                 if (!pkgConfAddProperty (NULL, &val, false, curProp->vals[i].type))
                 {
                     ConfFreeParseTree (blocks);
-                    cb->state = NNPKG_TRANS_STATE_ERR;
                     cb->error = NNPKG_ERR_SYNTAX_ERR;
+                    TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
                     return false;
                 }
             }
@@ -204,8 +211,8 @@ NNPKG_PUBLIC bool PkgParseMainConf (NnpkgTransCb_t* cb, const char* file)
     {
         error ("%s: package database path not specified", ConfGetFileName());
         ConfFreeParseTree (blocks);
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_SYNTAX_ERR;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return false;
     }
     ConfFreeParseTree (blocks);
@@ -220,17 +227,14 @@ NNPKG_PUBLIC void PkgDestroyMainConf()
     StrRefDestroy (conf.dbLoc.strtabPath);
 }
 
-// Contained in pkgdb.c
-void pkgDestroy (const Object_t* obj);
-
 NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file)
 {
     // Parse file
     ListHead_t* blocks = ConfInit (file);
     if (!blocks)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_SYNTAX_ERR;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return NULL;
     }
     NnpkgPackage_t* pkgOut = calloc_s (sizeof (NnpkgPackage_t));
@@ -244,8 +248,9 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file)
     {
         error ("%s: empty package configuaration file", ConfGetFileName());
         ConfFreeParseTree (blocks);
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_SYNTAX_ERR;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+        ObjDestroy (&pkgOut->obj);
         return NULL;
     }
     if (ListIterate (ListFront (blocks)))
@@ -253,8 +258,9 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file)
         error ("%s: only one package block supported in a configuration file",
                ConfGetFileName());
         ConfFreeParseTree (blocks);
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_SYNTAX_ERR;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+        ObjDestroy (&pkgOut->obj);
         return NULL;
     }
     // Iterate through blocks
@@ -268,8 +274,9 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file)
                lineNo,
                UnicodeToHost (StrRefGet (block->blockType)));
         ConfFreeParseTree (blocks);
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_SYNTAX_ERR;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+        ObjDestroy (&pkgOut->obj);
         return NULL;
     }
     if (!block->blockName)
@@ -279,8 +286,9 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file)
                lineNo,
                UnicodeToHost (StrRefGet (block->blockType)));
         ConfFreeParseTree (blocks);
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_SYNTAX_ERR;
+        ObjDestroy (&pkgOut->obj);
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return NULL;
     }
     pkgOut->id = StrRefNew (block->blockName);
@@ -300,8 +308,9 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file)
                        lineNo,
                        UnicodeToHost (StrRefGet (prop->name)));
                 ConfFreeParseTree (blocks);
-                cb->state = NNPKG_TRANS_STATE_ERR;
                 cb->error = NNPKG_ERR_SYNTAX_ERR;
+                TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+                ObjDestroy (&pkgOut->obj);
                 return NULL;
             }
             if (prop->vals[0].type != DATATYPE_STRING)
@@ -311,8 +320,9 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file)
                        lineNo,
                        UnicodeToHost (StrRefGet (prop->name)));
                 ConfFreeParseTree (blocks);
-                cb->state = NNPKG_TRANS_STATE_ERR;
                 cb->error = NNPKG_ERR_SYNTAX_ERR;
+                TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+                ObjDestroy (&pkgOut->obj);
                 return NULL;
             }
             pkgOut->description = StrRefNew (prop->vals[0].str);
@@ -326,8 +336,9 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file)
                        lineNo,
                        UnicodeToHost (StrRefGet (prop->name)));
                 ConfFreeParseTree (blocks);
-                cb->state = NNPKG_TRANS_STATE_ERR;
                 cb->error = NNPKG_ERR_SYNTAX_ERR;
+                TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+                ObjDestroy (&pkgOut->obj);
                 return NULL;
             }
             if (prop->vals[0].type != DATATYPE_STRING)
@@ -337,8 +348,9 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file)
                        lineNo,
                        UnicodeToHost (StrRefGet (prop->name)));
                 ConfFreeParseTree (blocks);
-                cb->state = NNPKG_TRANS_STATE_ERR;
                 cb->error = NNPKG_ERR_SYNTAX_ERR;
+                TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+                ObjDestroy (&pkgOut->obj);
                 return NULL;
             }
             pkgOut->prefix = StrRefNew (prop->vals[0].str);
@@ -352,8 +364,8 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file)
                        lineNo,
                        UnicodeToHost (StrRefGet (prop->name)));
                 ConfFreeParseTree (blocks);
-                cb->state = NNPKG_TRANS_STATE_ERR;
                 cb->error = NNPKG_ERR_SYNTAX_ERR;
+                TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
                 return NULL;
             }
             if (prop->vals[0].type != DATATYPE_IDENTIFIER)
@@ -363,8 +375,9 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file)
                        lineNo,
                        UnicodeToHost (StrRefGet (prop->name)));
                 ConfFreeParseTree (blocks);
-                cb->state = NNPKG_TRANS_STATE_ERR;
                 cb->error = NNPKG_ERR_SYNTAX_ERR;
+                TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+                ObjDestroy (&pkgOut->obj);
                 return NULL;
             }
             const char32_t* val = StrRefGet (prop->vals[0].id);
@@ -379,13 +392,15 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file)
                        lineNo,
                        UnicodeToHost (StrRefGet (prop->name)));
                 ConfFreeParseTree (blocks);
-                cb->state = NNPKG_TRANS_STATE_ERR;
                 cb->error = NNPKG_ERR_SYNTAX_ERR;
+                TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+                ObjDestroy (&pkgOut->obj);
                 return NULL;
             }
         }
         else if (!c32cmp (StrRefGet (prop->name), U"dependencies"))
         {
+            bool depError = false;
             for (int i = 0; i < prop->nextVal; ++i)
             {
                 ConfPropVal_t* propVal = &prop->vals[i];
@@ -397,16 +412,39 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file)
                            ConfGetFileName(),
                            lineNo,
                            UnicodeToHost (StrRefGet (prop->name)));
-                    cb->state = NNPKG_TRANS_STATE_ERR;
                     cb->error = NNPKG_ERR_SYNTAX_ERR;
+                    TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+                    ObjDestroy (&pkgOut->obj);
                     return NULL;
                 }
                 // Find this package
                 // TODO: versioning support
-                NnpkgPackage_t* pkg = PkgFindPackage (cb, StrRefGet (propVal->id));
-                if (!pkg)
-                    return NULL;
-                ListAddBack (pkgOut->deps, pkg, 0);
+                ListEntry_t* curEntry = ListFront (cb->pkgDbs);
+                NnpkgPackage_t* pkg = NULL;
+                while (curEntry && !pkg)
+                {
+                    pkg = pkgDbFindPackage (cb,
+                                            ListEntryData (curEntry),
+                                            StrRefGet (propVal->id),
+                                            true);
+                    curEntry = ListIterate (curEntry);
+                }
+                if (pkg)
+                    ListAddBack (pkgOut->deps, pkg, 0);
+                else
+                {
+                    cb->error = NNPKG_ERR_BROKEN_DEP;
+                    cb->errHint[0] = StrRefNew (pkgOut->id);
+                    cb->errHint[1] = StrRefNew (propVal->id);
+                    TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+                    depError = true;
+                }
+            }
+            if (depError)
+            {
+                ConfFreeParseTree (blocks);
+                ObjDestroy (&pkgOut->obj);
+                return NULL;
             }
         }
         propEntry = ListIterate (propEntry);

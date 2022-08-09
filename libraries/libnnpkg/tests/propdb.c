@@ -33,6 +33,11 @@
 #include <string.h>
 #include <unistd.h>
 
+void progHandler (NnpkgTransCb_t* cb, int state)
+{
+    printf ("%d\n", cb->error);
+}
+
 int main (int argc, char** argv)
 {
     setprogname (argv[0]);
@@ -40,6 +45,7 @@ int main (int argc, char** argv)
     bindtextdomain ("libnnpkg", NNPKG_LOCALE_BASE);
     // Remove old database
     NnpkgTransCb_t cb;
+    cb.progress = progHandler;
     TEST_BOOL (PkgParseMainConf (&cb, NNPKG_CONFFILE_PATH),
                "PkgParseMainConf success");
     NnpkgDbLocation_t* dbLoc = &cb.conf->dbLoc;

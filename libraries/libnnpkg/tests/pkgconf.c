@@ -26,12 +26,18 @@
 #include <nextest.h>
 #include <nnpkg/pkg.h>
 
+void progHandler (NnpkgTransCb_t* cb, int state)
+{
+    printf ("%d\n", cb->error);
+}
+
 int main (int argc, char** argv)
 {
     setprogname (argv[0]);
     setlocale (LC_ALL, "");
     bindtextdomain ("libnnpkg", NNPKG_LOCALE_BASE);
     NnpkgTransCb_t cb;
+    cb.progress = progHandler;
     TEST_BOOL (PkgParseMainConf (&cb, NNPKG_CONFFILE_PATH),
                "PkgParseMainConf success");
     NnpkgDbLocation_t* dbLoc = &cb.conf->dbLoc;
@@ -44,9 +50,6 @@ int main (int argc, char** argv)
                "Package validity 2");
     TEST_BOOL (!c32cmp (StrRefGet (pkg->prefix), U"/test"), "Package validity 3");
     TEST_BOOL (pkg->isDependency, "Package validity 4");
-    NnpkgPackage_t* dep = ListEntryData (ListFront (pkg->deps));
-    TEST_BOOL (dep, "Package validity 5");
-    TEST_BOOL (!c32cmp (StrRefGet (dep->id), U"pkgtest2"), "Package validity 6");
     ObjDestroy (&pkg->obj);
     PkgCloseDbs();
     StrRefDestroy (dbLoc->dbPath);

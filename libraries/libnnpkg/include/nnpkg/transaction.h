@@ -18,6 +18,7 @@
 #ifndef _TRANSACTION_H
 #define _TRANSACTION_H
 
+#include <config.h>
 #include <libnex/list.h>
 #include <libnex/stringref.h>
 
@@ -40,24 +41,41 @@ typedef struct _nnpkgConf NnpkgMainConf_t;
 #define NNPKG_TRANS_ADD 1
 
 // Transaction states
-#define NNPKG_TRANS_STATE_ERR 1
+#define NNPKG_TRANS_STATE_ERR      1
+#define NNPKG_STATE_ADDPKG         2
+#define NNPKG_STATE_INIT_PKGSYS    3
+#define NNPKG_STATE_READ_PKGCONF   4
+#define NNPKG_STATE_ACCEPT         5
+#define NNPKG_STATE_CLEANUP_PKGSYS 6
 
 // Transaction structure
 typedef struct _nnpkgact
 {
     // State information
-    int state;                          ///< Current state of transaction
-    int type;                           ///< Type of transaction being performed
-    void (*progress) (int newState);    ///< Called when we transition to a new state
+    int state;    ///< Current state of transaction
+    int type;     ///< Type of transaction being performed
+    void (*progress) (struct _nnpkgact* cb,
+                      int newState);    ///< Called when we transition to a new state
 
     // Error information
     int error;                    ///< Error code if an error occurred
     int sysErrno;                 ///< Saved errno
     StringRef32_t* errHint[5];    ///< Useful diagnostic data in error
+#define progressHint errHint
 
     // Internal configuration
     ListHead_t* pkgDbs;       ///< Databases loaded
+    const char* confFile;     ///< Configuration file
     NnpkgMainConf_t* conf;    ///< Configuration of program
+
+    // Block of data pertaining to transaction type
+    void* transactData;
 } NnpkgTransCb_t;
+
+/// Sets state, performing any special processing that must be done
+NNPKG_PUBLIC void TransactSetState (NnpkgTransCb_t* cb, int state);
+
+/// Executes transaction state machine
+NNPKG_PUBLIC bool TransactExecute (NnpkgTransCb_t* cb);
 
 #endif

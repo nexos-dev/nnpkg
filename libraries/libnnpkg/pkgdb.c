@@ -53,7 +53,8 @@ typedef struct _dbpkg
 void pkgDestroy (const Object_t* obj)
 {
     NnpkgPackage_t* pkg = ObjGetContainer (obj, NnpkgPackage_t, obj);
-    StrRefDestroy (pkg->id);
+    if (pkg->id)
+        StrRefDestroy (pkg->id);
     if (pkg->description)
         StrRefDestroy (pkg->description);
     if (pkg->prefix)
@@ -61,7 +62,8 @@ void pkgDestroy (const Object_t* obj)
     if (pkg->prop)
         ObjDeRef (&pkg->prop->obj);
     // Destroy dependencies
-    ListDestroy (pkg->deps);
+    if (pkg->deps)
+        ListDestroy (pkg->deps);
     free (pkg);
 }
 
@@ -91,8 +93,8 @@ NNPKG_PUBLIC bool PkgDbAddPackage (NnpkgTransCb_t* cb,
     if (ListFindEntryBy (db->propsToAdd, StrRefGet (pkg->id)) ||
         PropDbFindProp (db, StrRefGet (pkg->id), &propToCheck))
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_PKG_EXIST;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         cb->errHint[0] = StrRefNew (pkg->id);
         return false;
     }
@@ -100,8 +102,8 @@ NNPKG_PUBLIC bool PkgDbAddPackage (NnpkgTransCb_t* cb,
     NnpkgProp_t* prop = malloc_s (sizeof (NnpkgProp_t));
     if (!prop)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_OOM;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return false;
     }
     prop->id = StrRefNew (pkg->id);
@@ -109,8 +111,8 @@ NNPKG_PUBLIC bool PkgDbAddPackage (NnpkgTransCb_t* cb,
     propDbPkg_t* internalPkg = calloc_s (sizeof (propDbPkg_t));
     if (!internalPkg)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_OOM;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return false;
     }
     internalPkg->isDependency = pkg->isDependency;
@@ -140,20 +142,24 @@ NNPKG_PUBLIC bool PkgDbAddPackage (NnpkgTransCb_t* cb,
 
 NnpkgPackage_t* pkgDbFindPackage (NnpkgTransCb_t* cb,
                                   NnpkgPropDb_t* db,
-                                  const char32_t* name)
+                                  const char32_t* name,
+                                  bool findingDep)
 {
     // Find property
     NnpkgProp_t* prop = malloc_s (sizeof (NnpkgProp_t));
     if (!prop)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_OOM;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return NULL;
     }
     if (!PropDbFindProp (db, name, prop))
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
-        cb->error = NNPKG_ERR_PKG_NO_EXIST;
+        if (!findingDep)
+        {
+            cb->error = NNPKG_ERR_PKG_NO_EXIST;
+            TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+        }
         free (prop);
         return NULL;
     }
@@ -162,8 +168,8 @@ NnpkgPackage_t* pkgDbFindPackage (NnpkgTransCb_t* cb,
     if (!pkg)
     {
         ObjDestroy (&prop->obj);
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_OOM;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return NULL;
     }
     pkg->id = StrRefNew (prop->id);
@@ -180,8 +186,8 @@ NnpkgPackage_t* pkgDbFindPackage (NnpkgTransCb_t* cb,
     if (!pkg->deps)
     {
         ObjDestroy (&prop->obj);
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_OOM;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return NULL;
     }
     // Add each dependency
@@ -190,23 +196,32 @@ NnpkgPackage_t* pkgDbFindPackage (NnpkgTransCb_t* cb,
     {
         // Find package
         NnpkgPackage_t* dep =
-            pkgDbFindPackage (cb, db, PropDbGetString (db, intProp->deps[i].idx));
+            pkgDbFindPackage (cb,
+                              db,
+                              PropDbGetString (db, intProp->deps[i].idx),
+                              true);
         // If we can't find the package, than we return -1 to indicate a broken
         // dependency As we go up the recursion chain, we will keep returning -1 to
         // prevent overwriting diagnostic info.
         // The actual interface will normalize -1 to NULL for consistency's sake
         if (!dep)
         {
-            cb->state = NNPKG_TRANS_STATE_ERR;
+            ObjDestroy (&prop->obj);
+            ListDestroy (pkg->deps);
             cb->error = NNPKG_ERR_BROKEN_DEP;
-            cb->errHint[0] = StrRefNew (pkg->id);
+            TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+            cb->errHint[0] = pkg->id;
             cb->errHint[1] =
                 StrRefCreate (PropDbGetString (db, intProp->deps[i].idx));
             StrRefNoFree (cb->errHint[1]);
             return (NnpkgPackage_t*) -1;
         }
         else if (dep == (NnpkgPackage_t*) -1)
+        {
+            ObjDestroy (&prop->obj);
+            ListDestroy (pkg->deps);
             return (NnpkgPackage_t*) -1;
+        }
         ListAddBack (pkg->deps, dep, 0);
         ++i;
     }
@@ -219,7 +234,7 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgDbFindPackage (NnpkgTransCb_t* cb,
                                                NnpkgPropDb_t* db,
                                                const char32_t* name)
 {
-    NnpkgPackage_t* pkg = pkgDbFindPackage (cb, db, name);
+    NnpkgPackage_t* pkg = pkgDbFindPackage (cb, db, name, false);
     // Normalize -1 return value to NULL, as error info is in the control block
     return (pkg == (NnpkgPackage_t*) -1) ? NULL : pkg;
 }

@@ -150,17 +150,17 @@ NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgTransCb_t* cb, NnpkgDbLocation_t* d
     NnpkgPropDb_t* db = calloc_s (sizeof (NnpkgPropDb_t));
     if (!db)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_OOM;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return NULL;
     }
     // Get size of database
     struct stat st;
     if (stat (fileName, &st) == -1)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_SYS;
         cb->sysErrno = errno;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         free (db);
         return NULL;
     }
@@ -169,9 +169,9 @@ NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgTransCb_t* cb, NnpkgDbLocation_t* d
     db->fd = open (fileName, O_RDWR);
     if (db->fd == -1)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_SYS;
         cb->sysErrno = errno;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         free (db);
         return NULL;
     }
@@ -180,14 +180,14 @@ NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgTransCb_t* cb, NnpkgDbLocation_t* d
     {
         if (errno == EWOULDBLOCK)
         {
-            cb->state = NNPKG_TRANS_STATE_ERR;
             cb->error = NNPKG_ERR_DB_LOCKED;
+            TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         }
         else
         {
-            cb->state = NNPKG_TRANS_STATE_ERR;
             cb->error = NNPKG_ERR_SYS;
             cb->sysErrno = errno;
+            TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         }
         close (db->fd);
         free (db);
@@ -197,9 +197,9 @@ NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgTransCb_t* cb, NnpkgDbLocation_t* d
     db->memBase = mmap (NULL, db->sz, PROT_READ | PROT_WRITE, MAP_SHARED, db->fd, 0);
     if (!db->memBase)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_SYS;
         cb->sysErrno = errno;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         flock (db->fd, LOCK_UN);
         close (db->fd);
         free (db);
@@ -210,8 +210,8 @@ NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgTransCb_t* cb, NnpkgDbLocation_t* d
     ListSetFindBy (db->propsToAdd, propAddListFind);
     if (!db->propsToAdd)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_OOM;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         flock (db->fd, LOCK_UN);
         close (db->fd);
         munmap (db->memBase, db->sz);
@@ -222,8 +222,8 @@ NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgTransCb_t* cb, NnpkgDbLocation_t* d
     db->propsToRm = ListCreate ("NnpkgProp_t", true, offsetof (NnpkgProp_t, obj));
     if (!db->propsToRm)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_OOM;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         flock (db->fd, LOCK_UN);
         close (db->fd);
         munmap (db->memBase, db->sz);
@@ -309,8 +309,8 @@ NNPKG_PUBLIC bool PropDbAddProp (NnpkgTransCb_t* cb,
     // Add to list of properties to add
     if (!ListAddBack (db->propsToAdd, prop, 0))
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_OOM;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return false;
     }
     return true;
@@ -323,8 +323,9 @@ NNPKG_PUBLIC bool PropDbRemoveProp (NnpkgTransCb_t* cb,
     assert (prop->internal);
     if (!ListAddBack (db->propsToRm, prop, 0))
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_OOM;
+
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return false;
     }
     return true;

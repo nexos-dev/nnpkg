@@ -40,8 +40,8 @@ NNPKG_PUBLIC bool PkgOpenDb (NnpkgTransCb_t* cb,
     NnpkgPackageDb_t* pkgDb = malloc_s (sizeof (NnpkgPackageDb_t));
     if (!pkgDb)
     {
-        cb->state = NNPKG_TRANS_STATE_ERR;
         cb->error = NNPKG_ERR_OOM;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return false;
     }
     ObjCreate ("NnpkgPackageDb_t", &pkgDb->obj);
