@@ -53,8 +53,10 @@ int main (int argc, char** argv)
     setlocale (LC_ALL, "");
     bindtextdomain ("libnnpkg", NNPKG_LOCALE_BASE);
     // Remove old database(s)
-    TEST_BOOL (PkgParseMainConf (NNPKG_CONFFILE_PATH), "PkgParseMainConf success");
-    NnpkgDbLocation_t* dbLoc = &PkgGetMainConf()->dbLoc;
+    NnpkgTransCb_t cb;
+    TEST_BOOL (PkgParseMainConf (&cb, NNPKG_CONFFILE_PATH),
+               "PkgParseMainConf success");
+    NnpkgDbLocation_t* dbLoc = &cb.conf->dbLoc;
     if (unlink (StrRefGet (dbLoc->dbPath)) == -1 && errno != ENOENT)
     {
         error ("%s: %s", dbLoc->dbPath, strerror (errno));
@@ -66,7 +68,7 @@ int main (int argc, char** argv)
         return 1;
     }
     TEST_BOOL (PropDbCreate (dbLoc), "PkgDbCreate() success");
-    TEST_BOOL (PkgOpenDb (dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL),
+    TEST_BOOL (PkgOpenDb (&cb, dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL),
                "PkgDbOpen() success");
     NnpkgPackage_t* pkg = calloc_s (sizeof (NnpkgPackage_t));
     if (!pkg)
@@ -82,7 +84,7 @@ int main (int argc, char** argv)
     StrRefNoFree (pkg->prefix);
     pkg->type = NNPKG_PKG_TYPE_PACKAGE;
     pkg->deps = ListCreate ("NnpkgPackage_t", true, offsetof (NnpkgPackage_t, obj));
-    PkgAddPackage (pkg);
+    PkgAddPackage (&cb, pkg);
     NnpkgPackage_t* pkg2 = calloc_s (sizeof (NnpkgPackage_t));
     if (!pkg2)
         return 1;
@@ -97,7 +99,7 @@ int main (int argc, char** argv)
     StrRefNoFree (pkg2->prefix);
     pkg2->type = NNPKG_PKG_TYPE_PACKAGE;
     pkg2->deps = ListCreate ("NnpkgPackage_t", true, offsetof (NnpkgPackage_t, obj));
-    PkgAddPackage (pkg2);
+    PkgAddPackage (&cb, pkg2);
     NnpkgPackage_t* pkg3 = calloc_s (sizeof (NnpkgPackage_t));
     if (!pkg3)
         return 1;
@@ -118,14 +120,14 @@ int main (int argc, char** argv)
     ListAddBack (pkg3->deps,
                  ObjGetContainer (ObjRef (&pkg->obj), NnpkgPackage_t, obj),
                  0);
-    PkgAddPackage (pkg3);
+    PkgAddPackage (&cb, pkg3);
     PkgCloseDbs();
     ObjDestroy (&pkg->obj);
     ObjDestroy (&pkg2->obj);
     ObjDestroy (&pkg3->obj);
-    TEST_BOOL (PkgOpenDb (dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL),
+    TEST_BOOL (PkgOpenDb (&cb, dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL),
                "PkgOpenDb() success");
-    pkg2 = PkgFindPackage (U"pkgtest3");
+    pkg2 = PkgFindPackage (&cb, U"pkgtest3");
     TEST_BOOL (pkg2, "PkgDbFindPackage() success");
     TEST_BOOL (pkg2 != (NnpkgPackage_t*) -1, "PkgDbFindPackage() success 2");
     TEST_BOOL (!c32cmp (StrRefGet (pkg2->id), U"pkgtest3"),
@@ -142,13 +144,13 @@ int main (int argc, char** argv)
                "PkgDbFindPackage() validity 5");
     ObjDeRef (&pkg2->obj);
     PkgCloseDbs();
-    TEST_BOOL (PkgOpenDb (dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL),
+    TEST_BOOL (PkgOpenDb (&cb, dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL),
                "PkgOpenDb() success");
-    pkg2 = PkgFindPackage (U"pkgtest");
-    TEST_BOOL (PkgRemovePackage (pkg2), "PkgDbRemovePackage success");
+    pkg2 = PkgFindPackage (&cb, U"pkgtest");
+    TEST_BOOL (PkgRemovePackage (&cb, pkg2), "PkgDbRemovePackage success");
     PkgCloseDbs();
-    PkgOpenDb (dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL);
-    pkg2 = PkgFindPackage (U"pkgtest");
+    PkgOpenDb (&cb, dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL);
+    pkg2 = PkgFindPackage (&cb, U"pkgtest");
     TEST_BOOL (!pkg2, "PkgDbRemovePackage() validity");
     PkgCloseDbs();
     StrRefDestroy (dbLoc->dbPath);

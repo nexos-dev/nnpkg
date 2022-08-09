@@ -62,20 +62,21 @@ bool addRunAction()
         error ("Package configuration file not specified");
         return false;
     }
+    NnpkgTransCb_t cb;
     // Get database path from configuration
-    if (!PkgParseMainConf (confFile))
+    if (!PkgParseMainConf (&cb, confFile))
         return false;
-    NnpkgDbLocation_t* dbLoc = &PkgGetMainConf()->dbLoc;
-    if (!PkgOpenDb (dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL))
+    NnpkgDbLocation_t* dbLoc = &cb.conf->dbLoc;
+    if (!PkgOpenDb (&cb, dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL))
         return false;
     // Parse configuration of package
-    NnpkgPackage_t* newPkg = PkgReadConf (pkgPath);
+    NnpkgPackage_t* newPkg = PkgReadConf (&cb, pkgPath);
     if (!newPkg)
         return false;
     // Finally, add it
     printf ("Adding package %s to database...\n",
             UnicodeToHost (StrRefGet (newPkg->id)));
-    if (!PkgAddPackage (newPkg))
+    if (!PkgAddPackage (&cb, newPkg))
         return false;
     printf ("done\n");
     PkgDestroyMainConf();

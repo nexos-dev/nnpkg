@@ -25,6 +25,7 @@
 #include <libnex/char32.h>
 #include <libnex/list.h>
 #include <libnex/stringref.h>
+#include <nnpkg/transaction.h>
 #include <stddef.h>
 
 typedef struct _dbProp propDbProperty_t;
@@ -78,13 +79,16 @@ typedef struct _dbLoc
 NNPKG_PUBLIC bool PropDbCreate (NnpkgDbLocation_t* dbLoc);
 
 /// Opens up property database from disk
-NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgDbLocation_t* dbLoc);
+NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgTransCb_t* cb,
+                                        NnpkgDbLocation_t* dbLoc);
 
 /// Closes property database
 NNPKG_PUBLIC void PropDbClose (NnpkgPropDb_t* db);
 
 /// Adds a property to the database
-NNPKG_PUBLIC bool PropDbAddProp (NnpkgPropDb_t* db, NnpkgProp_t* prop);
+NNPKG_PUBLIC bool PropDbAddProp (NnpkgTransCb_t* cb,
+                                 NnpkgPropDb_t* db,
+                                 NnpkgProp_t* prop);
 
 /// Finds a property in the database
 NNPKG_PUBLIC bool PropDbFindProp (NnpkgPropDb_t* db,
@@ -92,13 +96,17 @@ NNPKG_PUBLIC bool PropDbFindProp (NnpkgPropDb_t* db,
                                   NnpkgProp_t* out);
 
 /// Removes a property from the database
-NNPKG_PUBLIC bool PropDbRemoveProp (NnpkgPropDb_t* db, const NnpkgProp_t* prop);
+NNPKG_PUBLIC bool PropDbRemoveProp (NnpkgTransCb_t* cb,
+                                    NnpkgPropDb_t* db,
+                                    const NnpkgProp_t* prop);
 
 /// Initializes string table
 NNPKG_PUBLIC bool PropDbInitStrtab (const char* path);
 
 /// Opens the string table
-NNPKG_PUBLIC bool PropDbOpenStrtab (NnpkgPropDb_t* db, const char* fileName);
+NNPKG_PUBLIC bool PropDbOpenStrtab (NnpkgTransCb_t* cb,
+                                    NnpkgPropDb_t* db,
+                                    const char* fileName);
 
 /// Writes string, returning the index
 NNPKG_PUBLIC size_t PropDbAddString (NnpkgPropDb_t* db, const char32_t* s);

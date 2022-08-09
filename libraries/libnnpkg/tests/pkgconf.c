@@ -31,11 +31,13 @@ int main (int argc, char** argv)
     setprogname (argv[0]);
     setlocale (LC_ALL, "");
     bindtextdomain ("libnnpkg", NNPKG_LOCALE_BASE);
-    TEST_BOOL (PkgParseMainConf (NNPKG_CONFFILE_PATH), "PkgParseMainConf success");
-    NnpkgDbLocation_t* dbLoc = &PkgGetMainConf()->dbLoc;
-    TEST_BOOL (PkgOpenDb (dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL),
+    NnpkgTransCb_t cb;
+    TEST_BOOL (PkgParseMainConf (&cb, NNPKG_CONFFILE_PATH),
+               "PkgParseMainConf success");
+    NnpkgDbLocation_t* dbLoc = &cb.conf->dbLoc;
+    TEST_BOOL (PkgOpenDb (&cb, dbLoc, NNPKGDB_TYPE_DEST, NNPKGDB_LOCATION_LOCAL),
                "PkgOpenDb() success");
-    NnpkgPackage_t* pkg = PkgReadConf ("pkgconf.conf");
+    NnpkgPackage_t* pkg = PkgReadConf (&cb, "pkgconf.conf");
     TEST_BOOL (pkg, "PkgReadConf() success");
     TEST_BOOL (!c32cmp (StrRefGet (pkg->id), U"test"), "Package validity 1");
     TEST_BOOL (!c32cmp (StrRefGet (pkg->description), U"A test package"),

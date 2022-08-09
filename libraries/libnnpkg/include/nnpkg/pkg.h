@@ -27,6 +27,10 @@
 #include <nnpkg/propdb.h>
 #include <stdbool.h>
 
+// Forward declaration of control block to prevent recursive dependencies
+// in headers
+typedef struct _nnpkgact NnpkgTransCb_t;
+
 // nnpkg configuration structure
 typedef struct _nnpkgConf
 {
@@ -71,30 +75,36 @@ typedef struct _nnpkgdb
 // Function to manipulate a package database
 
 /// Opens up the package database
-NNPKG_PUBLIC NnpkgPropDb_t* PkgDbOpen (NnpkgDbLocation_t* dbLoc);
+NNPKG_PUBLIC NnpkgPropDb_t* PkgDbOpen (NnpkgTransCb_t* cb, NnpkgDbLocation_t* dbLoc);
 
 /// Close the package database
 NNPKG_PUBLIC void PkgDbClose (NnpkgPropDb_t* db);
 
 /// Adds package to database
-NNPKG_PUBLIC bool PkgDbAddPackage (NnpkgPropDb_t* db, NnpkgPackage_t* pkg);
+NNPKG_PUBLIC bool PkgDbAddPackage (NnpkgTransCb_t* cb,
+                                   NnpkgPropDb_t* db,
+                                   NnpkgPackage_t* pkg);
 
 /// Finds a package in the database
-NNPKG_PUBLIC NnpkgPackage_t* PkgDbFindPackage (NnpkgPropDb_t* db,
+NNPKG_PUBLIC NnpkgPackage_t* PkgDbFindPackage (NnpkgTransCb_t* cb,
+                                               NnpkgPropDb_t* db,
                                                const char32_t* name);
 
 /// Removes a package
-NNPKG_PUBLIC bool PkgDbRemovePackage (NnpkgPropDb_t* db, NnpkgPackage_t* pkg);
+NNPKG_PUBLIC bool PkgDbRemovePackage (NnpkgTransCb_t* cb,
+                                      NnpkgPropDb_t* db,
+                                      NnpkgPackage_t* pkg);
 
 // Package configuration functions
 
 /// Parses configuration of a package configuration file
-NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (const char* file);
+NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file);
 
 // Functions to manage package databases
 
 /// Opens up a package database
-NNPKG_PUBLIC bool PkgOpenDb (NnpkgDbLocation_t* dbPath,
+NNPKG_PUBLIC bool PkgOpenDb (NnpkgTransCb_t* cb,
+                             NnpkgDbLocation_t* dbPath,
                              unsigned short type,
                              unsigned short location);
 
@@ -102,19 +112,17 @@ NNPKG_PUBLIC bool PkgOpenDb (NnpkgDbLocation_t* dbPath,
 NNPKG_PUBLIC void PkgCloseDbs();
 
 /// Adds a package to dest database
-NNPKG_PUBLIC bool PkgAddPackage (NnpkgPackage_t* pkg);
+NNPKG_PUBLIC bool PkgAddPackage (NnpkgTransCb_t* cb, NnpkgPackage_t* pkg);
 
 /// Removes a package from the dest database
-NNPKG_PUBLIC bool PkgRemovePackage (NnpkgPackage_t* pkg);
+NNPKG_PUBLIC bool PkgRemovePackage (NnpkgTransCb_t* cb, NnpkgPackage_t* pkg);
 
 /// Finds a package in the first available database
-NNPKG_PUBLIC NnpkgPackage_t* PkgFindPackage (const char32_t* name);
+NNPKG_PUBLIC NnpkgPackage_t* PkgFindPackage (NnpkgTransCb_t* cb,
+                                             const char32_t* name);
 
 /// Parse configuration file for nnpkg
-NNPKG_PUBLIC bool PkgParseMainConf (const char* file);
-
-/// Gets program configuration
-NNPKG_PUBLIC NnpkgMainConf_t* PkgGetMainConf();
+NNPKG_PUBLIC bool PkgParseMainConf (NnpkgTransCb_t* cb, const char* file);
 
 /// Destroys main configuration
 NNPKG_PUBLIC void PkgDestroyMainConf();

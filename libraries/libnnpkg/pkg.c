@@ -32,20 +32,25 @@ void pkgDbDestroy (const Object_t* obj)
     free (pkgDb);
 }
 
-NNPKG_PUBLIC bool PkgOpenDb (NnpkgDbLocation_t* dbPath,
+NNPKG_PUBLIC bool PkgOpenDb (NnpkgTransCb_t* cb,
+                             NnpkgDbLocation_t* dbPath,
                              unsigned short type,
                              unsigned short location)
 {
     NnpkgPackageDb_t* pkgDb = malloc_s (sizeof (NnpkgPackageDb_t));
     if (!pkgDb)
+    {
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_OOM;
         return false;
+    }
     ObjCreate ("NnpkgPackageDb_t", &pkgDb->obj);
     ObjSetDestroy (&pkgDb->obj, pkgDbDestroy);
     assert (type && type <= NNPKGDB_TYPE_DEST);
     assert (location && location <= NNPKGDB_LOCATION_REMOTE);
     pkgDb->type = type;
     pkgDb->location = location;
-    pkgDb->propDb = PkgDbOpen (dbPath);
+    pkgDb->propDb = PkgDbOpen (cb, dbPath);
     if (!pkgDb->propDb)
     {
         free (pkgDb);
@@ -59,25 +64,29 @@ NNPKG_PUBLIC bool PkgOpenDb (NnpkgDbLocation_t* dbPath,
     }
     // Add to list
     if (!pkgDbs)
+    {
         pkgDbs =
             ListCreate ("NnpkgPackageDb_t", true, offsetof (NnpkgPackageDb_t, obj));
+        cb->pkgDbs = pkgDbs;
+    }
     ListAddBack (pkgDbs, pkgDb, 0);
     return true;
 }
 
-NNPKG_PUBLIC bool PkgAddPackage (NnpkgPackage_t* pkg)
+NNPKG_PUBLIC bool PkgAddPackage (NnpkgTransCb_t* cb, NnpkgPackage_t* pkg)
 {
     assert (destDb);
-    return PkgDbAddPackage (destDb->propDb, pkg);
+    return PkgDbAddPackage (cb, destDb->propDb, pkg);
 }
 
-NNPKG_PUBLIC bool PkgRemovePackage (NnpkgPackage_t* pkg)
+NNPKG_PUBLIC bool PkgRemovePackage (NnpkgTransCb_t* cb, NnpkgPackage_t* pkg)
 {
     assert (destDb);
-    return PkgDbRemovePackage (destDb->propDb, pkg);
+    return PkgDbRemovePackage (cb, destDb->propDb, pkg);
 }
 
-NNPKG_PUBLIC NnpkgPackage_t* PkgFindPackage (const char32_t* name)
+NNPKG_PUBLIC NnpkgPackage_t* PkgFindPackage (NnpkgTransCb_t* cb,
+                                             const char32_t* name)
 {
     assert (pkgDbs);
     // Iterate through all databases
@@ -85,7 +94,7 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgFindPackage (const char32_t* name)
     while (curEntry)
     {
         NnpkgPackageDb_t* pkgDb = ListEntryData (curEntry);
-        NnpkgPackage_t* pkg = PkgDbFindPackage (pkgDb->propDb, name);
+        NnpkgPackage_t* pkg = PkgDbFindPackage (cb, pkgDb->propDb, name);
         if (pkg)
             return pkg;
         curEntry = ListIterate (curEntry);

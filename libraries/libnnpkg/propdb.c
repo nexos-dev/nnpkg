@@ -142,19 +142,25 @@ bool propAddListFind (const ListEntry_t* entry, const void* data)
         return false;
 }
 
-NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgDbLocation_t* dbLoc)
+NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgTransCb_t* cb, NnpkgDbLocation_t* dbLoc)
 {
     const char* fileName = StrRefGet (dbLoc->dbPath);
     const char* strtab = StrRefGet (dbLoc->strtabPath);
     // Prepare state
     NnpkgPropDb_t* db = calloc_s (sizeof (NnpkgPropDb_t));
     if (!db)
+    {
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_OOM;
         return NULL;
+    }
     // Get size of database
     struct stat st;
     if (stat (fileName, &st) == -1)
     {
-        error ("%s: %s", fileName, strerror (errno));
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_SYS;
+        cb->sysErrno = errno;
         free (db);
         return NULL;
     }
@@ -163,7 +169,9 @@ NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgDbLocation_t* dbLoc)
     db->fd = open (fileName, O_RDWR);
     if (db->fd == -1)
     {
-        error ("%s: %s", fileName, strerror (errno));
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_SYS;
+        cb->sysErrno = errno;
         free (db);
         return NULL;
     }
@@ -172,11 +180,15 @@ NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgDbLocation_t* dbLoc)
     {
         if (errno == EWOULDBLOCK)
         {
-            // Package database is locked
-            error ("failed to acquire package database lock");
+            cb->state = NNPKG_TRANS_STATE_ERR;
+            cb->error = NNPKG_ERR_DB_LOCKED;
         }
         else
-            error ("%s: %s", fileName, strerror (errno));
+        {
+            cb->state = NNPKG_TRANS_STATE_ERR;
+            cb->error = NNPKG_ERR_SYS;
+            cb->sysErrno = errno;
+        }
         close (db->fd);
         free (db);
         return NULL;
@@ -185,7 +197,9 @@ NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgDbLocation_t* dbLoc)
     db->memBase = mmap (NULL, db->sz, PROT_READ | PROT_WRITE, MAP_SHARED, db->fd, 0);
     if (!db->memBase)
     {
-        error ("%s: %s", fileName, strerror (errno));
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_SYS;
+        cb->sysErrno = errno;
         flock (db->fd, LOCK_UN);
         close (db->fd);
         free (db);
@@ -196,6 +210,8 @@ NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgDbLocation_t* dbLoc)
     ListSetFindBy (db->propsToAdd, propAddListFind);
     if (!db->propsToAdd)
     {
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_OOM;
         flock (db->fd, LOCK_UN);
         close (db->fd);
         munmap (db->memBase, db->sz);
@@ -206,6 +222,8 @@ NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgDbLocation_t* dbLoc)
     db->propsToRm = ListCreate ("NnpkgProp_t", true, offsetof (NnpkgProp_t, obj));
     if (!db->propsToRm)
     {
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_OOM;
         flock (db->fd, LOCK_UN);
         close (db->fd);
         munmap (db->memBase, db->sz);
@@ -216,7 +234,7 @@ NNPKG_PUBLIC NnpkgPropDb_t* PropDbOpen (NnpkgDbLocation_t* dbLoc)
     propDbHeader_t* dbHdr = (propDbHeader_t*) db->memBase;
     db->numFreeProps = dbHdr->numFreeProps;
     assert (dbHdr->propSize == PROPDB_PROP_SIZE);
-    if (!PropDbOpenStrtab (db, strtab))
+    if (!PropDbOpenStrtab (cb, db, strtab))
     {
         flock (db->fd, LOCK_UN);
         close (db->fd);
@@ -282,23 +300,34 @@ void propDbSerializeProp (NnpkgPropDb_t* db,
     dbEntry->crc32 = Crc32Calc ((uint8_t*) dbEntry, PROPDB_PROP_SIZE);
 }
 
-NNPKG_PUBLIC bool PropDbAddProp (NnpkgPropDb_t* db, NnpkgProp_t* prop)
+NNPKG_PUBLIC bool PropDbAddProp (NnpkgTransCb_t* cb,
+                                 NnpkgPropDb_t* db,
+                                 NnpkgProp_t* prop)
 {
     ObjCreate ("NnpkgProp_t", &prop->obj);
     ObjSetDestroy (&prop->obj, propDestroy);
     // Add to list of properties to add
     if (!ListAddBack (db->propsToAdd, prop, 0))
     {
-        error ("out of memory");
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_OOM;
         return false;
     }
     return true;
 }
 
-NNPKG_PUBLIC bool PropDbRemoveProp (NnpkgPropDb_t* db, const NnpkgProp_t* prop)
+NNPKG_PUBLIC bool PropDbRemoveProp (NnpkgTransCb_t* cb,
+                                    NnpkgPropDb_t* db,
+                                    const NnpkgProp_t* prop)
 {
     assert (prop->internal);
-    return ListAddBack (db->propsToRm, prop, 0);
+    if (!ListAddBack (db->propsToRm, prop, 0))
+    {
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_OOM;
+        return false;
+    }
+    return true;
 }
 
 NNPKG_PUBLIC bool PropDbFindProp (NnpkgPropDb_t* db,

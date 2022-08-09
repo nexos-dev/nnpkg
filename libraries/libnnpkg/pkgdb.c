@@ -65,9 +65,9 @@ void pkgDestroy (const Object_t* obj)
     free (pkg);
 }
 
-NNPKG_PUBLIC NnpkgPropDb_t* PkgDbOpen (NnpkgDbLocation_t* dbLoc)
+NNPKG_PUBLIC NnpkgPropDb_t* PkgDbOpen (NnpkgTransCb_t* cb, NnpkgDbLocation_t* dbLoc)
 {
-    NnpkgPropDb_t* db = PropDbOpen (dbLoc);
+    NnpkgPropDb_t* db = PropDbOpen (cb, dbLoc);
     if (!db)
         return NULL;
     db->strtabPath = StrRefNew (dbLoc->strtabPath);
@@ -82,27 +82,35 @@ NNPKG_PUBLIC void PkgDbClose (NnpkgPropDb_t* db)
     PropDbClose (db);
 }
 
-NNPKG_PUBLIC bool PkgDbAddPackage (NnpkgPropDb_t* db, NnpkgPackage_t* pkg)
+NNPKG_PUBLIC bool PkgDbAddPackage (NnpkgTransCb_t* cb,
+                                   NnpkgPropDb_t* db,
+                                   NnpkgPackage_t* pkg)
 {
     // Ensure conflicting ID doesn't exist
     NnpkgProp_t propToCheck;
     if (ListFindEntryBy (db->propsToAdd, StrRefGet (pkg->id)) ||
         PropDbFindProp (db, StrRefGet (pkg->id), &propToCheck))
     {
-        error ("package \"%s\" already exists in database",
-               UnicodeToHost (StrRefGet (pkg->id)));
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_PKG_EXIST;
+        cb->errHint[0] = StrRefNew (pkg->id);
         return false;
     }
     // Initialize new property
     NnpkgProp_t* prop = malloc_s (sizeof (NnpkgProp_t));
     if (!prop)
+    {
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_OOM;
         return false;
+    }
     prop->id = StrRefNew (pkg->id);
     prop->type = NNPKG_PROP_TYPE_PKG;
     propDbPkg_t* internalPkg = calloc_s (sizeof (propDbPkg_t));
     if (!internalPkg)
     {
-        free (prop);
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_OOM;
         return false;
     }
     internalPkg->isDependency = pkg->isDependency;
@@ -123,22 +131,29 @@ NNPKG_PUBLIC bool PkgDbAddPackage (NnpkgPropDb_t* db, NnpkgPackage_t* pkg)
     prop->data = internalPkg;
     prop->dataLen = sizeof (propDbPkg_t);
     // Add it to database
-    PropDbAddProp (db, prop);
+    if (!PropDbAddProp (cb, db, prop))
+        return false;
     // Point to prop in pkg
     pkg->prop = ObjGetContainer (ObjRef (&prop->obj), NnpkgProp_t, obj);
     return true;
 }
 
-NNPKG_PUBLIC NnpkgPackage_t* PkgDbFindPackage (NnpkgPropDb_t* db,
-                                               const char32_t* name)
+NnpkgPackage_t* pkgDbFindPackage (NnpkgTransCb_t* cb,
+                                  NnpkgPropDb_t* db,
+                                  const char32_t* name)
 {
     // Find property
     NnpkgProp_t* prop = malloc_s (sizeof (NnpkgProp_t));
     if (!prop)
-        return (NnpkgPackage_t*) -1;
+    {
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_OOM;
+        return NULL;
+    }
     if (!PropDbFindProp (db, name, prop))
     {
-        error ("package \"%s\" does not exist in database", UnicodeToHost (name));
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_PKG_NO_EXIST;
         free (prop);
         return NULL;
     }
@@ -147,7 +162,9 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgDbFindPackage (NnpkgPropDb_t* db,
     if (!pkg)
     {
         ObjDestroy (&prop->obj);
-        return (NnpkgPackage_t*) -1;
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_OOM;
+        return NULL;
     }
     pkg->id = StrRefNew (prop->id);
     // Get internal property representation
@@ -162,9 +179,10 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgDbFindPackage (NnpkgPropDb_t* db,
     pkg->deps = ListCreate ("NnpkgPackage_t", true, offsetof (NnpkgPackage_t, obj));
     if (!pkg->deps)
     {
-        error ("out of memory");
         ObjDestroy (&prop->obj);
-        return (NnpkgPackage_t*) -1;
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_OOM;
+        return NULL;
     }
     // Add each dependency
     int i = 0;
@@ -172,9 +190,23 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgDbFindPackage (NnpkgPropDb_t* db,
     {
         // Find package
         NnpkgPackage_t* dep =
-            PkgDbFindPackage (db, PropDbGetString (db, intProp->deps[i].idx));
+            pkgDbFindPackage (cb, db, PropDbGetString (db, intProp->deps[i].idx));
+        // If we can't find the package, than we return -1 to indicate a broken
+        // dependency As we go up the recursion chain, we will keep returning -1 to
+        // prevent overwriting diagnostic info.
+        // The actual interface will normalize -1 to NULL for consistency's sake
         if (!dep)
-            return NULL;
+        {
+            cb->state = NNPKG_TRANS_STATE_ERR;
+            cb->error = NNPKG_ERR_BROKEN_DEP;
+            cb->errHint[0] = StrRefNew (pkg->id);
+            cb->errHint[1] =
+                StrRefCreate (PropDbGetString (db, intProp->deps[i].idx));
+            StrRefNoFree (cb->errHint[1]);
+            return (NnpkgPackage_t*) -1;
+        }
+        else if (dep == (NnpkgPackage_t*) -1)
+            return (NnpkgPackage_t*) -1;
         ListAddBack (pkg->deps, dep, 0);
         ++i;
     }
@@ -183,8 +215,19 @@ NNPKG_PUBLIC NnpkgPackage_t* PkgDbFindPackage (NnpkgPropDb_t* db,
     return pkg;
 }
 
-NNPKG_PUBLIC bool PkgDbRemovePackage (NnpkgPropDb_t* db, NnpkgPackage_t* pkg)
+NNPKG_PUBLIC NnpkgPackage_t* PkgDbFindPackage (NnpkgTransCb_t* cb,
+                                               NnpkgPropDb_t* db,
+                                               const char32_t* name)
+{
+    NnpkgPackage_t* pkg = pkgDbFindPackage (cb, db, name);
+    // Normalize -1 return value to NULL, as error info is in the control block
+    return (pkg == (NnpkgPackage_t*) -1) ? NULL : pkg;
+}
+
+NNPKG_PUBLIC bool PkgDbRemovePackage (NnpkgTransCb_t* cb,
+                                      NnpkgPropDb_t* db,
+                                      NnpkgPackage_t* pkg)
 {
     assert (pkg->prop);
-    return PropDbRemoveProp (db, pkg->prop);
+    return PropDbRemoveProp (cb, db, pkg->prop);
 }

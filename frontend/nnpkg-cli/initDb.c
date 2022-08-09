@@ -46,8 +46,9 @@ actionOption_t* initGetOptions()
 // Run init action
 bool initRunAction()
 {
-    PkgParseMainConf (confFile);
-    NnpkgDbLocation_t* dbLoc = &PkgGetMainConf()->dbLoc;
+    NnpkgTransCb_t cb;
+    PkgParseMainConf (&cb, confFile);
+    NnpkgDbLocation_t* dbLoc = &cb.conf->dbLoc;
     if (!PropDbCreate (dbLoc))
     {
         error ("Unable to create package database");

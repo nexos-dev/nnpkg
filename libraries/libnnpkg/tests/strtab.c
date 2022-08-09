@@ -28,6 +28,7 @@
 #include <nextest.h>
 #include <nnpkg/pkg.h>
 #include <nnpkg/propdb.h>
+#include <nnpkg/transaction.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -36,8 +37,10 @@ int main (int argc, char** argv)
     setprogname (argv[0]);
     setlocale (LC_ALL, "");
     bindtextdomain ("libnnpkg", NNPKG_LOCALE_BASE);
-    TEST_BOOL (PkgParseMainConf (NNPKG_CONFFILE_PATH), "PkgParseMainConf success");
-    NnpkgDbLocation_t* dbLoc = &PkgGetMainConf()->dbLoc;
+    NnpkgTransCb_t cb;
+    TEST_BOOL (PkgParseMainConf (&cb, NNPKG_CONFFILE_PATH),
+               "PkgParseMainConf success");
+    NnpkgDbLocation_t* dbLoc = &cb.conf->dbLoc;
     // Remove old table
     StringRef_t* strtab = dbLoc->strtabPath;
     if (unlink (StrRefGet (strtab)) == -1 && errno != ENOENT)
@@ -48,7 +51,7 @@ int main (int argc, char** argv)
     // Create it
     PropDbInitStrtab (StrRefGet (strtab));
     NnpkgPropDb_t propDb;
-    TEST_BOOL (PropDbOpenStrtab (&propDb, StrRefGet (strtab)),
+    TEST_BOOL (PropDbOpenStrtab (&cb, &propDb, StrRefGet (strtab)),
                "PropDbOpenStrtab() success");
     // Test writing 2 strings
     size_t idx = PropDbAddString (&propDb, U"Test string");

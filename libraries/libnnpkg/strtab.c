@@ -26,6 +26,7 @@
 #include <libnex/safemalloc.h>
 #include <libnex/safestring.h>
 #include <nnpkg/propdb.h>
+#include <nnpkg/transaction.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -90,13 +91,16 @@ NNPKG_PUBLIC bool PropDbInitStrtab (const char* fileName)
     return true;
 }
 
-NNPKG_PUBLIC bool PropDbOpenStrtab (NnpkgPropDb_t* db, const char* fileName)
+NNPKG_PUBLIC bool PropDbOpenStrtab (NnpkgTransCb_t* cb,
+                                    NnpkgPropDb_t* db,
+                                    const char* fileName)
 {
     // Get size of database
     struct stat st;
     if (stat (fileName, &st) == -1)
     {
-        error ("%s: %s", fileName, strerror (errno));
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_SYS;
         free (db);
         return NULL;
     }
@@ -106,7 +110,9 @@ NNPKG_PUBLIC bool PropDbOpenStrtab (NnpkgPropDb_t* db, const char* fileName)
     db->strtabFd = open (fileName, O_RDWR);
     if (db->strtabFd == -1)
     {
-        error ("%s: %s", fileName, strerror (errno));
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_SYS;
+        cb->sysErrno = errno;
         return false;
     }
     // Map database
@@ -114,7 +120,9 @@ NNPKG_PUBLIC bool PropDbOpenStrtab (NnpkgPropDb_t* db, const char* fileName)
         mmap (NULL, db->strtabSz, PROT_READ, MAP_PRIVATE, db->strtabFd, 0);
     if (!db->strtabBase)
     {
-        error ("%s: %s", fileName, strerror (errno));
+        cb->state = NNPKG_TRANS_STATE_ERR;
+        cb->error = NNPKG_ERR_SYS;
+        cb->sysErrno = errno;
         close (db->strtabFd);
         return false;
     }
