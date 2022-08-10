@@ -43,10 +43,15 @@ actionOption_t* initGetOptions()
     return initOptions;
 }
 
+static void progress (NnpkgTransCb_t* cb, int state)
+{
+}
+
 // Run init action
 bool initRunAction()
 {
     NnpkgTransCb_t cb;
+    cb.progress = progress;
     PkgParseMainConf (&cb, confFile);
     NnpkgDbLocation_t* dbLoc = &cb.conf->dbLoc;
     if (!PropDbCreate (dbLoc))

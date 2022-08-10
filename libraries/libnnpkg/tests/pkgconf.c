@@ -48,7 +48,8 @@ int main (int argc, char** argv)
     TEST_BOOL (!c32cmp (StrRefGet (pkg->id), U"test"), "Package validity 1");
     TEST_BOOL (!c32cmp (StrRefGet (pkg->description), U"A test package"),
                "Package validity 2");
-    TEST_BOOL (!c32cmp (StrRefGet (pkg->prefix), U"/test"), "Package validity 3");
+    TEST_BOOL (!c32cmp (StrRefGet (pkg->prefix), U"/home/nexos/Programs/Test"),
+               "Package validity 3");
     TEST_BOOL (pkg->isDependency, "Package validity 4");
     ObjDestroy (&pkg->obj);
     PkgCloseDbs();
