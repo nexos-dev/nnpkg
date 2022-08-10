@@ -90,12 +90,15 @@ NNPKG_PUBLIC bool PkgDbAddPackage (NnpkgTransCb_t* cb,
 {
     // Ensure conflicting ID doesn't exist
     NnpkgProp_t propToCheck;
+    memset (&propToCheck, 0, sizeof (NnpkgProp_t));
     if (ListFindEntryBy (db->propsToAdd, StrRefGet (pkg->id)) ||
         PropDbFindProp (db, StrRefGet (pkg->id), &propToCheck))
     {
+        if (propToCheck.id)
+            StrRefDestroy (propToCheck.id);
         cb->error = NNPKG_ERR_PKG_EXIST;
-        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         cb->errHint[0] = StrRefNew (pkg->id);
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return false;
     }
     // Initialize new property

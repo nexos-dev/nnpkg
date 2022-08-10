@@ -35,6 +35,7 @@ typedef struct _nnpkgact NnpkgTransCb_t;
 typedef struct _nnpkgConf
 {
     NnpkgDbLocation_t dbLoc;    ///< Location of package database
+    StringRef32_t* idxPath;     ///< Path to index
 } NnpkgMainConf_t;
 
 // Package type
@@ -68,8 +69,10 @@ typedef struct _nnpkgdb
 // Add package transaction
 typedef struct _nnpkgtransadd
 {
-    NnpkgPackage_t* pkg;    ///< Package being added
-    const char* pkgConf;    ///< Path of package cofiguration file
+    Object_t obj;
+    NnpkgPackage_t* pkg;       ///< Package being added
+    const char* pkgConf;       ///< Path of package cofiguration file
+    ListHead_t* idxEntries;    ///< List of entries to be added to index
 } NnpkgTransAdd_t;
 
 // Database types and locations

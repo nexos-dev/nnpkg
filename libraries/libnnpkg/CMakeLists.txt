@@ -23,7 +23,8 @@ list(APPEND LIBNNPKG_SOURCES
             pkgdb.c 
             strtab.c 
             pkgconf.c
-            transaction.c)
+            transaction.c
+            indexMan.c)
 
 # Set up PO files
 gettext_files(DOMAIN libnnpkg

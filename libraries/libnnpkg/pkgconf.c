@@ -109,6 +109,17 @@ bool pkgConfAddProperty (StringRef32_t* newProp,
             c32stombs (hostStrtab, StrRefGet (val->strVal), hostLen, &mbstate);
             conf.dbLoc.strtabPath = StrRefCreate (hostStrtab);
         }
+        else if (!c32cmp (StrRefGet (curProp), U"indexPath"))
+        {
+            if (dataType != DATATYPE_STRING)
+            {
+                error ("%s:%d: property \"indexPath\" requires a string value",
+                       ConfGetFileName(),
+                       lineNo);
+                return false;
+            }
+            conf.idxPath = StrRefNew (val->strVal);
+        }
         else
         {
             error ("%s:%d property \"%s\" unrecognized",
@@ -215,6 +226,22 @@ NNPKG_PUBLIC bool PkgParseMainConf (NnpkgTransCb_t* cb, const char* file)
         TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
         return false;
     }
+    if (!conf.dbLoc.strtabPath)
+    {
+        error ("%s: string table path not specified", ConfGetFileName());
+        ConfFreeParseTree (blocks);
+        cb->error = NNPKG_ERR_SYNTAX_ERR;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+        return false;
+    }
+    if (!conf.idxPath)
+    {
+        error ("%s: index path not specified", ConfGetFileName());
+        ConfFreeParseTree (blocks);
+        cb->error = NNPKG_ERR_SYNTAX_ERR;
+        TransactSetState (cb, NNPKG_TRANS_STATE_ERR);
+        return false;
+    }
     ConfFreeParseTree (blocks);
     cb->conf = &conf;
     return true;
@@ -225,6 +252,7 @@ NNPKG_PUBLIC void PkgDestroyMainConf()
 {
     StrRefDestroy (conf.dbLoc.dbPath);
     StrRefDestroy (conf.dbLoc.strtabPath);
+    StrRefDestroy (conf.idxPath);
 }
 
 NNPKG_PUBLIC NnpkgPackage_t* PkgReadConf (NnpkgTransCb_t* cb, const char* file)

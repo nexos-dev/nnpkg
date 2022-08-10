@@ -54,7 +54,8 @@ bool initRunAction()
         error ("Unable to create package database");
         return false;
     }
-    printf ("Initialized empty package database in %s\n", StrRefGet (dbLoc->dbPath));
+    printf ("Initialized empty package database in %s\n",
+            (char*) StrRefGet (dbLoc->dbPath));
     PkgDestroyMainConf();
     return true;
 }

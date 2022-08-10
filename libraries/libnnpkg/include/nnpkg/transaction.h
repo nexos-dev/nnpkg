@@ -15,6 +15,8 @@
     limitations under the License.
 */
 
+/// @file transaction.g
+
 #ifndef _TRANSACTION_H
 #define _TRANSACTION_H
 
@@ -47,6 +49,8 @@ typedef struct _nnpkgConf NnpkgMainConf_t;
 #define NNPKG_STATE_READ_PKGCONF   4
 #define NNPKG_STATE_ACCEPT         5
 #define NNPKG_STATE_CLEANUP_PKGSYS 6
+#define NNPKG_STATE_COLLECT_INDEX  7
+#define NNPKG_STATE_WRITE_INDEX    8
 
 // Transaction structure
 typedef struct _nnpkgact

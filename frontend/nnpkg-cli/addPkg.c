@@ -62,18 +62,24 @@ void addProgress (NnpkgTransCb_t* cb, int newState)
     switch (newState)
     {
         case NNPKG_STATE_INIT_PKGSYS:
-            printf ("\n* Initializing database...");
+            printf ("\n  * Initializing database...");
             break;
         case NNPKG_STATE_READ_PKGCONF:
-            printf ("\n* Reading package configuration...");
+            printf ("\n  * Reading package configuration...");
             break;
         case NNPKG_STATE_ADDPKG:
-            printf ("\n* Adding package %s to database...",
+            printf ("\n  * Adding package %s to database...",
                     UnicodeToHost (StrRefGet (cb->progressHint[0])));
             StrRefDestroy (cb->progressHint[0]);
             break;
         case NNPKG_STATE_CLEANUP_PKGSYS:
-            printf ("\n* Cleaning up...");
+            printf ("\n  * Cleaning up...");
+            break;
+        case NNPKG_STATE_COLLECT_INDEX:
+            printf ("\n  * Computing index changes...");
+            break;
+        case NNPKG_STATE_WRITE_INDEX:
+            printf ("\n  * Writing changes to index...");
             break;
         case NNPKG_STATE_ACCEPT:
             printf ("\nDone!\n");
@@ -110,7 +116,7 @@ void addProgress (NnpkgTransCb_t* cb, int newState)
                     error ("syntax error in configuration file");
                     break;
                 case NNPKG_ERR_SYS:
-                    error ("system error: %s", strerror (errno));
+                    error ("system error: %s", strerror (cb->sysErrno));
                     break;
             }
         }
@@ -125,25 +131,18 @@ bool addRunAction()
         error ("Package configuration file not specified");
         return false;
     }
-    printf ("* Starting transaction...");
-    NnpkgTransCb_t cb;
+    printf ("  * Starting transaction...");
+    NnpkgTransCb_t cb = {0};
     // Prepare control block
     cb.type = NNPKG_TRANS_ADD;
     cb.confFile = confFile;
     cb.progress = addProgress;
-    NnpkgTransAdd_t* transData = calloc_s (sizeof (NnpkgTransAdd_t));
-    if (!transData)
-    {
-        cb.error = NNPKG_ERR_OOM;
-        TransactSetState (&cb, NNPKG_TRANS_STATE_ERR);
-        return false;
-    }
-    transData->pkgConf = pkgPath;
-    cb.transactData = transData;
+    NnpkgTransAdd_t transData = {0};
+    transData.pkgConf = pkgPath;
+    cb.transactData = &transData;
     // Run transaction
     bool res = TransactExecute (&cb);
-    free (transData);
     if (!res)
-        printf ("\n* An error occurred while executing transaction. Aborting.\n");
+        printf ("\n  * An error occurred while executing transaction. Aborting.\n");
     return res;
 }

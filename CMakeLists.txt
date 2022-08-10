@@ -86,6 +86,7 @@ set(NNPKG_DATABASE_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LOCALSTATEDIR}/
     CACHE STRING "Path to nnpkg main database")
 set(NNPKG_STRTAB_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LOCALSTATEDIR}/nnpkgstrtab"
     CACHE STRING "Path to nnpkg main string table")
+set(NNPKG_INDEX_PATH "/Programs/Index" CACHE STRING "Path to program index")
 
 # See if tests should be enabled
 if(${NNPKG_ENABLE_TESTS})
