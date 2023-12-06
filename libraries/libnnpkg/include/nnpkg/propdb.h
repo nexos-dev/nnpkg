@@ -21,7 +21,6 @@
 #define _NNPKGDB_H
 
 #include <config.h>
-#include <libintl.h>
 #include <libnex/char32.h>
 #include <libnex/list.h>
 #include <libnex/stringref.h>

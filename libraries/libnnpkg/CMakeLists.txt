@@ -27,10 +27,12 @@ list(APPEND LIBNNPKG_SOURCES
             indexMan.c)
 
 # Set up PO files
-gettext_files(DOMAIN libnnpkg
-              OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/po"
-              LANGS "${NNPKG_ENABLED_LOCALES}"
-              SOURCES "${LIBNNPKG_SOURCES}")
+if(NNPKG_ENABLE_NLS)
+    gettext_files(DOMAIN libnnpkg
+                  OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/po"
+                  LANGS "${NNPKG_ENABLED_LOCALES}"
+                  SOURCES "${LIBNNPKG_SOURCES}")
+endif()
 
 add_library(nnpkgman ${LIBNNPKG_SOURCES})
 

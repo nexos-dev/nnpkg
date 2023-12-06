@@ -19,7 +19,9 @@
 
 #include <stdio.h>
 #define NEXTEST_NAME "pkgconf"
+#ifdef NNPKG_ENABLE_NLS
 #include <libintl.h>
+#endif
 #include <libnex/progname.h>
 #include <libnex/stringref.h>
 #include <locale.h>
@@ -34,8 +36,10 @@ void progHandler (NnpkgTransCb_t* cb, int state)
 int main (int argc, char** argv)
 {
     setprogname (argv[0]);
+#ifdef NNPKG_ENABLE_NLS
     setlocale (LC_ALL, "");
     bindtextdomain ("libnnpkg", NNPKG_LOCALE_BASE);
+#endif
     NnpkgTransCb_t cb;
     cb.progress = progHandler;
     TEST_BOOL (PkgParseMainConf (&cb, NNPKG_CONFFILE_PATH),

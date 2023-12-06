@@ -21,10 +21,12 @@ project(nnpkg-cli LANGUAGES C)
 list(APPEND NNPKG_CLI_SOURCES main.c initDb.c addPkg.c)
 
 # Set up PO files
-gettext_files(DOMAIN nnpkg
-              OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/po"
-              LANGS "${NNPKG_ENABLED_LOCALES}"
-              SOURCES "${NNPKG_CLI_SOURCES}")
+if(NNPKG_ENABLE_NLS)
+    gettext_files(DOMAIN nnpkg
+                  OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/po"
+                  LANGS "${NNPKG_ENABLED_LOCALES}"
+                  SOURCES "${NNPKG_CLI_SOURCES}")
+endif()
 
 add_executable(nnpkg ${NNPKG_CLI_SOURCES})
 set_target_properties(nnpkg PROPERTIES LINKER_LANGUAGE CXX)

@@ -18,7 +18,9 @@
 #include "include/nnpkg.h"
 #include <assert.h>
 #include <config.h>
+#ifdef NNPKG_ENABLE_NLS
 #include <libintl.h>
+#endif
 #include <libnex.h>
 #include <locale.h>
 #include <stdio.h>
@@ -180,8 +182,10 @@ Please consult source to review the full license.\n",
 int main (int argc, char** argv)
 {
     setprogname (argv[0]);
+#ifdef NNPKG_ENABLE_NLS
     setlocale (LC_ALL, "");
     bindtextdomain ("nnpkg", NNPKG_LOCALE_BASE);
+#endif
     // Parse arguments
     if (!parseArgs (argc, argv))
         return 1;

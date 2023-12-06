@@ -20,13 +20,15 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#include <libintl.h>
-
 #define NNPKG_VERSION "@CMAKE_PROJECT_VERSION@"
 #define NNPKG_LOCALE_BASE "@NNPKG_LOCALE_BASE@"
 #cmakedefine NNPKG_ENABLE_NLS
 #cmakedefine HAVE_VISIBILITY
 #cmakedefine HAVE_DECLSPEC_EXPORT
+
+#ifdef NNPKG_ENABLE_NLS
+#include <libintl.h>
+#endif
 
 // Get visibility stuff right
 #ifdef HAVE_VISIBILITY

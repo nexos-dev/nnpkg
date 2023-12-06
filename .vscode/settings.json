@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "nnpkg.h": "c",
+        "error.h": "c",
+        "pkg.h": "c",
+        "unistd.h": "c",
+        "progname.h": "c",
+        "libintl.h": "c",
+        "errno.h": "c"
+    }
+}
