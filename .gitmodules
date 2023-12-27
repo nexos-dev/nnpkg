@@ -1,9 +1,12 @@
 [submodule "libraries/libnex"]
+    branch = "dev"
 	path = libraries/libnex
 	url = https://github.com/nexos-dev/libnex.git
 [submodule "libraries/libconf"]
+    branch = "dev"
 	path = libraries/libconf
 	url = https://github.com/nexos-dev/libconf.git
 [submodule "libraries/libchardet"]
+    branch = "master"
 	path = libraries/libchardet
 	url = https://github.com/nexos-dev/libchardet.git

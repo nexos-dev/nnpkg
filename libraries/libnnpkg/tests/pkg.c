@@ -39,7 +39,7 @@ void progHandler (NnpkgTransCb_t* cb, int state)
 }
 
 // Destroys a package
-void pkgDestroy (const Object_t* obj)
+static pkgDestroy (const Object_t* obj)
 {
     NnpkgPackage_t* pkg = ObjGetContainer (obj, NnpkgPackage_t, obj);
     StrRefDestroy (pkg->id);
