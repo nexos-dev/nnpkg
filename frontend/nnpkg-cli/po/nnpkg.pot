@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-08-10 16:36-0400\n"
+"POT-Creation-Date: 2024-01-05 09:31-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,15 +17,15 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: main.c:121
+#: main.c:123
 msgid "action not specified"
 msgstr ""
 
-#: main.c:126
+#: main.c:128
 msgid "first argument must be action"
 msgstr ""
 
-#: main.c:135
+#: main.c:137
 #, c-format
 msgid ""
 "%s - an efficient, user-friendly package manager\n"
@@ -48,7 +48,7 @@ msgid ""
 "For info on configuring nnpkg, see nnpkg.conf(5)\n"
 msgstr ""
 
-#: main.c:176
+#: main.c:178
 #, c-format
 msgid "\"%s\" is not a valid action"
 msgstr ""

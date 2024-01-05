@@ -7,5 +7,6 @@
         "progname.h": "c",
         "libintl.h": "c",
         "errno.h": "c"
-    }
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

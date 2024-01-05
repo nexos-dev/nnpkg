@@ -66,6 +66,7 @@ int main (int argc, char** argv)
     // Try opening the database
     NnpkgPropDb_t* db = PropDbOpen (&cb, dbLoc);
     TEST_BOOL (db, "PropDbOpen() success status");
+    printf("%#llX\n",(*((uint64_t*) db->memBase)));
     // Test that database header is intact
     TEST ((*((uint64_t*) db->memBase)),
           0x7878807571686600,

@@ -48,7 +48,7 @@ target_link_libraries(nnpkgman PUBLIC nex conf)
 install(TARGETS nnpkgman)
 
 # Create test suites
-list(APPEND LIBNNPKG_TESTS strtab propdb pkg pkgconf)
+list(APPEND LIBNNPKG_TESTS propdb pkg pkgconf strtab)
 foreach(test ${LIBNNPKG_TESTS})
     nextest_add_library_test(NAME ${test}
                              SOURCE tests/${test}.c

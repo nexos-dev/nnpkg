@@ -61,9 +61,6 @@ void addProgress (NnpkgTransCb_t* cb, int newState)
 {
     switch (newState)
     {
-        case NNPKG_STATE_INIT_PKGSYS:
-            printf ("\n  * Initializing database...");
-            break;
         case NNPKG_STATE_READ_PKGCONF:
             printf ("\n  * Reading package configuration...");
             break;
@@ -71,12 +68,6 @@ void addProgress (NnpkgTransCb_t* cb, int newState)
             printf ("\n  * Adding package %s to database...",
                     UnicodeToHost (StrRefGet (cb->progressHint[0])));
             StrRefDestroy (cb->progressHint[0]);
-            break;
-        case NNPKG_STATE_CLEANUP_PKGSYS:
-            printf ("\n  * Cleaning up...");
-            break;
-        case NNPKG_STATE_COLLECT_INDEX:
-            printf ("\n  * Computing index changes...");
             break;
         case NNPKG_STATE_WRITE_INDEX:
             printf ("\n  * Writing changes to index...");

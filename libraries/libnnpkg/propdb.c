@@ -33,7 +33,7 @@
 // We really should be using an open-addressed hash table and
 // allow for longer strings. But that is a future improvement
 
-// File format structures. All fields are little endian
+// File format structures
 typedef struct _dbHeader
 {
     uint64_t sig;       // Contains 0x7878807571686600, which is "NNPKGDB\0" in ASCII
@@ -96,7 +96,7 @@ NNPKG_PUBLIC bool PropDbCreate (NnpkgDbLocation_t* dbLoc)
     }
     // Initialize header
     propDbHeader_t hdr;
-    hdr.sig = EndianChange64 (NNPKG_SIGNATURE, ENDIAN_LITTLE);
+    hdr.sig = NNPKG_SIGNATURE;
     hdr.version = NNPKG_CURRENT_VERSION;
     hdr.revision = NNPKG_CURRENT_REVISION;
     hdr.size = sizeof (propDbHeader_t);
