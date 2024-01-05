@@ -16,6 +16,13 @@
 ]]
 
 cmake_minimum_required(VERSION 3.00)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+cmake_policy(SET CMP0077 NEW)
+
+set(CHARDET_BUILDONLY ON)
+set(LIBCONF_BUILDONLY ON)
+set(LIBCONF_LINK_DEPS OFF)
+set(LIBNEX_BUILDONLY ON)
 
 add_subdirectory(libchardet)
 add_subdirectory(libnex)
